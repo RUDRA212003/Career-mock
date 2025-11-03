@@ -1,6 +1,6 @@
 'use client';
 import React, { useEffect, useState } from 'react';
-import { BarChart3, Search, Filter, Download, Calendar, Users, Clock, CheckCircle, XCircle, Trash2 } from 'lucide-react';
+import { BarChart3, Search, Filter, Download, Calendar, Users, Clock, CheckCircle, XCircle, Trash2, ArrowLeft } from 'lucide-react';
 import { supabase } from '@/services/supabaseClient';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,8 +19,11 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { useRouter } from "next/navigation";
+
 
 function InterviewAnalytics() {
+  const router = useRouter();
   const [interviews, setInterviews] = useState([]);
   const [filteredInterviews, setFilteredInterviews] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -42,7 +45,7 @@ function InterviewAnalytics() {
     try {
       setLoading(true);
       console.log('Fetching interviews...');
-      
+
       // Test database connection first
       const { data: testData, error: testError } = await supabase
         .from('Interviews')
@@ -59,7 +62,7 @@ function InterviewAnalytics() {
 
       // First, try to get interviews
       const { data: interviewsData, error: interviewsError } = await supabase
-        .from('Interviews')
+        .from('interviews')
         .select('*')
         .order('created_at', { ascending: false });
 
@@ -108,8 +111,8 @@ function InterviewAnalytics() {
             const resultsData = results || [];
             const completedResults = resultsData.filter(r => r.status === 'completed');
             const totalDuration = completedResults.reduce((sum, r) => sum + (r.duration || 0), 0);
-            const avgScore = completedResults.length > 0 
-              ? completedResults.reduce((sum, r) => sum + (r.score || 0), 0) / completedResults.length 
+            const avgScore = completedResults.length > 0
+              ? completedResults.reduce((sum, r) => sum + (r.score || 0), 0) / completedResults.length
               : 0;
 
             return {
@@ -145,9 +148,10 @@ function InterviewAnalytics() {
 
   const filterAndSortInterviews = () => {
     let filtered = interviews.filter(interview => {
-      const title = interview.title || interview.name || 'Untitled Interview';
+      const title = interview.jobposition || interview.jobdescription || 'Untitled Interview';
       const userEmail = interview.userEmail || interview.email || '';
-      
+
+
       return title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         userEmail.toLowerCase().includes(searchTerm.toLowerCase());
     });
@@ -319,7 +323,7 @@ function InterviewAnalytics() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {interviews.length > 0 
+              {interviews.length > 0
                 ? Math.round(interviews.reduce((sum, interview) => sum + interview.avgScore, 0) / interviews.length * 100) / 100
                 : 0
               }
@@ -377,6 +381,9 @@ function InterviewAnalytics() {
       {/* Interviews Table */}
       <Card>
         <CardHeader>
+          <Button onClick={() => router.back()} variant="outline" className="mb-4">
+  <ArrowLeft className="w-4 h-4 mr-2" /> Return to Dashboard
+</Button>
           <CardTitle>All Interviews ({filteredInterviews.length})</CardTitle>
           <CardDescription>
             Complete list of interviews with performance metrics
@@ -410,7 +417,10 @@ function InterviewAnalytics() {
                         </div>
                         <div>
                           <h3 className="font-medium text-gray-900">
-                            {interview.title || interview.name || interview.jobPosition || interview.jobDescription || 'Untitled Interview'}
+                            {interview.jobposition
+                              ? `${interview.jobposition} — ${interview.jobdescription || ''}`
+                              : 'Untitled Interview'}
+
                           </h3>
                           <div className="flex items-center space-x-4 text-sm text-gray-500">
                             <span className="flex items-center">
@@ -424,7 +434,7 @@ function InterviewAnalytics() {
                           </div>
                         </div>
                       </div>
-                      
+
                       <div className="flex items-center space-x-6">
                         <div className="text-center">
                           <div className="text-sm font-medium text-gray-900">
@@ -434,7 +444,7 @@ function InterviewAnalytics() {
                             {interview.completedCount} completed
                           </div>
                         </div>
-                        
+
                         <div className="text-center">
                           <div className="text-sm font-medium text-gray-900">
                             {interview.avgScore} avg score
@@ -443,14 +453,14 @@ function InterviewAnalytics() {
                             {getCompletionRate(interview)}% completion
                           </div>
                         </div>
-                        
+
                         <div className="text-center">
                           <div className="text-sm font-medium text-gray-900">
                             {Math.round(interview.totalDuration / 60)} min
                           </div>
                           <div className="text-xs text-gray-500">total time</div>
                         </div>
-                        
+
                         <div className="text-right">
                           <div className={`text-xs px-2 py-1 rounded-full ${getStatusColor(interview)}`}>
                             {getStatusText(interview)}
@@ -468,7 +478,7 @@ function InterviewAnalytics() {
                   </button>
                 </div>
               ))}
-              
+
               {filteredInterviews.length === 0 && !loading && (
                 <div className="text-center py-8 text-gray-500">
                   <BarChart3 className="w-12 h-12 mx-auto mb-4 text-gray-300" />

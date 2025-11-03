@@ -23,11 +23,25 @@ function InterviewDetail() {
     try {
       setLoading(true);
       const { data, error } = await supabase
-        .from("Interviews")
-        .select(
-          "jobPosition, jobDescription, type, questionList, duration, interview_id, created_at, interview_results (email, fullname,conversation_transcript, recommendations, interview_id,completed_at)"
+        .from("interviews")
+        .select(`
+        jobposition,
+        jobdescription,
+        type,
+        questionlist,
+        duration,
+        interview_id,
+        created_at,
+        interview_results (
+          email,
+          fullname,
+          conversation_transcript,
+          recommendations,
+          interview_id,
+          completed_at
         )
-        .eq("userEmail", user.email)
+      `)
+        .eq("userEmail", user.email) // ✅ match your column case
         .eq("interview_id", interview_id);
 
       if (error) throw error;
@@ -40,6 +54,7 @@ function InterviewDetail() {
       setLoading(false);
     }
   };
+
 
   if (loading) {
     return <div className="mt-5">Loading interview details...</div>;
@@ -57,8 +72,8 @@ function InterviewDetail() {
     <div className="mt-5 space-y-6">
       <h2 className="font-bold text-2xl">Interview Details</h2>
       <InterviewDetailContainer interviewDetail={interviewDetail} />
-      <CandidateList 
-        candidateList={interviewDetail["interview_results"] || []} 
+      <CandidateList
+        candidateList={interviewDetail["interview_results"] || []}
       />
     </div>
   );

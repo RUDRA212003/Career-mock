@@ -104,7 +104,7 @@ export default function RecruiterProfile() {
       // Upload to Supabase storage
       const fileName = `profile-${user.email}-${Date.now()}`;
       const { data, error } = await supabase.storage
-        .from('profile-pictures')
+        .from('profile photo')
         .upload(fileName, file);
 
       if (error) {
@@ -115,7 +115,7 @@ export default function RecruiterProfile() {
 
       // Get public URL
       const { data: urlData } = supabase.storage
-        .from('profile-pictures')
+        .from('profile photo')
         .getPublicUrl(fileName);
 
       const newPictureUrl = urlData.publicUrl;

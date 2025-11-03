@@ -107,7 +107,7 @@ function AdminLayout({ children }) {
       </header>
 
       {/* Navigation */}
-      <nav className="bg-white shadow-sm border-b">
+      {/* <nav className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex space-x-8 py-3">
             <a
@@ -142,7 +142,7 @@ function AdminLayout({ children }) {
             </a>
           </div>
         </div>
-      </nav>
+      </nav> */}
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

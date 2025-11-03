@@ -1,6 +1,6 @@
 'use client';
 import React, { useEffect, useState } from 'react';
-import { Users, Search, Filter, Download, Eye, Mail, Calendar, UserCheck, Trash2, Ban, AlertTriangle } from 'lucide-react';
+import { Users, Search, Filter, Download, Eye, Mail, Calendar, UserCheck, Trash2, Ban, AlertTriangle, ArrowLeft } from 'lucide-react';
 import { supabase } from '@/services/supabaseClient';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,8 +20,10 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { useUser } from '@/app/provider';
+import { useRouter } from 'next/navigation';
 
 function UserManagement() {
+  const router = useRouter();
   const { user } = useUser();
   const [users, setUsers] = useState([]);
   const [filteredUsers, setFilteredUsers] = useState([]);
@@ -497,11 +499,16 @@ function UserManagement() {
       {/* Users Table */}
       <Card>
         <CardHeader>
+          <Button onClick={() => router.back()} variant="outline" className="mb-4">
+  <ArrowLeft className="w-4 h-4 mr-2" /> Return to Dashboard
+</Button>
           <CardTitle>All Users ({filteredUsers.length})</CardTitle>
           <CardDescription>
             Complete list of registered users and their activity
+            
           </CardDescription>
         </CardHeader>
+        
         <CardContent>
           {loading ? (
             <div className="space-y-4">
@@ -660,6 +667,7 @@ function UserManagement() {
                      </div>
                    </div>
                  </div>
+                 
                ))}
               
               {filteredUsers.length === 0 && !loading && (
@@ -668,12 +676,15 @@ function UserManagement() {
                   <p>No users found matching your criteria</p>
                 </div>
               )}
+              
             </div>
           )}
         </CardContent>
       </Card>
     </div>
+    
   );
+ 
 }
 
 export default UserManagement; 

@@ -22,7 +22,7 @@ function InterviewDetailContainer({ interviewDetail }) {
   const router = useRouter();
 
   const parsedQuestions = (() => {
-    const raw = interviewDetail?.questionList;
+    const raw = interviewDetail?.questionlist;
 
     try {
       const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
@@ -74,7 +74,7 @@ function InterviewDetailContainer({ interviewDetail }) {
     <>
       <div className="p-5 bg-white border rounded-xl shadow-sm mt-5">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold">{interviewDetail?.jobPosition}</h2>
+          <h2 className="text-xl font-bold">{interviewDetail?.jobposition}</h2>
           <Button
             variant="outline"
             size="sm"
@@ -118,7 +118,7 @@ function InterviewDetailContainer({ interviewDetail }) {
         {/* Job Description */}
         <div className="mt-5">
           <h2 className="font-bold">Job Description</h2>
-          <p className="text-sm leading-6 whitespace-pre-wrap">{interviewDetail?.jobDescription}</p>
+          <p className="text-sm leading-6 whitespace-pre-wrap">{interviewDetail?.jobdescription}</p>
         </div>
 
         {/* Interview Questions */}
@@ -141,7 +141,7 @@ function InterviewDetailContainer({ interviewDetail }) {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Interview</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete the interview for <strong>{interviewDetail?.jobPosition}</strong>? 
+              Are you sure you want to delete the interview for <strong>{interviewDetail?.jobposition}</strong>? 
               This action cannot be undone and will permanently remove:
               <ul className="list-disc list-inside mt-2 space-y-1">
                 <li>The interview link</li>

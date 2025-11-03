@@ -11,60 +11,69 @@ import { FEEDBACK_PROMPT } from "@/services/Constants";
 import TimmerComponent from "./_components/TimmerComponent";
 import { getVapiClient } from "@/lib/vapiconfig";
 import { supabase } from "@/services/supabaseClient";
-import { useParams } from "next/navigation";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 function StartInterview() {
   const { interviewInfo, setInterviewInfo } = useContext(InterviewDataContext);
-  const vapi = getVapiClient();
+  const [vapi, setVapi] = useState(null);
   const [activeUser, setActiveUser] = useState(false);
   const [start, setStart] = useState(false);
   const [subtitles, setSubtitles] = useState("");
   const [isSpeaking, setIsSpeaking] = useState(false);
   const conversation = useRef(null);
   const { interview_id } = useParams();
-  
   const router = useRouter();
+
   const [userProfile, setUserProfile] = useState({
     picture: null,
-    name: interviewInfo?.candidate_name || "Candidate"
+    name: interviewInfo?.candidate_name || "Candidate",
   });
+
   const [isGeneratingFeedback, setIsGeneratingFeedback] = useState(false);
 
-  // Restore interviewInfo from localStorage if missing
+  // ✅ Initialize VAPI Client safely
   useEffect(() => {
-    if (!interviewInfo && typeof window !== 'undefined') {
-      const stored = localStorage.getItem('interviewInfo');
+    try {
+      const client = getVapiClient();
+      if (!client) {
+        toast.error("❌ VAPI API key missing. Please check your .env file.");
+        console.error("VAPI API key missing. Check NEXT_PUBLIC_VAPI_KEY in .env.local");
+      } else {
+        setVapi(client);
+      }
+    } catch (err) {
+      console.error("Failed to initialize Vapi client:", err);
+      toast.error("Failed to initialize Vapi client");
+    }
+  }, []);
+
+  // ✅ Restore interviewInfo if missing
+  useEffect(() => {
+    if (!interviewInfo && typeof window !== "undefined") {
+      const stored = localStorage.getItem("interviewInfo");
       if (stored) {
         try {
           const parsed = JSON.parse(stored);
           if (parsed && parsed.interview_id === interview_id) {
             setInterviewInfo(parsed);
           } else {
-            // interview_id mismatch, clear
-            localStorage.removeItem('interviewInfo');
+            localStorage.removeItem("interviewInfo");
             router.replace(`/interview/${interview_id}`);
           }
         } catch {
-          localStorage.removeItem('interviewInfo');
+          localStorage.removeItem("interviewInfo");
           router.replace(`/interview/${interview_id}`);
         }
       } else {
-        // No info, redirect to join page
         router.replace(`/interview/${interview_id}`);
       }
     }
   }, [interviewInfo, interview_id, setInterviewInfo, router]);
 
+  // ✅ Start interview when ready
   useEffect(() => {
-    console.log("interviewInfo:", interviewInfo);
-    if (
-      interviewInfo &&
-      interviewInfo?.jobPosition &&
-      vapi &&
-      !start
-    ) {
+    if (interviewInfo && vapi && !start) {
       setStart(true);
       startCall();
     }
@@ -72,11 +81,8 @@ function StartInterview() {
 
   const startCall = async () => {
     const jobPosition = interviewInfo?.jobPosition || "Unknown Position";
-    // Use the generated questions for this candidate
-    const questionList = interviewInfo?.questionList?.interviewQuestions?.map((question) => question?.question) || [];
-
-    console.log("jobPosition:", jobPosition);
-    console.log("questionList:", questionList);
+    const questionList =
+      interviewInfo?.questionList?.interviewQuestions?.map((q) => q?.question) || [];
 
     const assistantOptions = {
       name: "AI Recruiter",
@@ -100,24 +106,11 @@ function StartInterview() {
 You are an AI voice assistant conducting interviews.
 Your job is to ask candidates provided interview questions, assess their responses.
 Begin the conversation with a friendly introduction, setting a relaxed yet professional tone. Example:
-"Hey ${interviewInfo?.candidate_name}! Welcome to your ${interviewInfo?.jobPosition} interview. Let's get started with a few questions!"
-Ask one question at a time and wait for the candidate's response before proceeding. Keep the questions clear and concise. Below Are the questions ask one by one:
+"Hey ${interviewInfo?.candidate_name}! Welcome to your ${interviewInfo?.jobPosition} interview. Let's get started!"
+Ask one question at a time and wait for their response.
+Keep it friendly, short, and natural. Use casual phrases like "Alright, next up..." or "Let's tackle a tricky one!"
+After 5–7 questions, wrap up the interview positively and thank the candidate.
 Questions: ${questionList}
-If the candidate struggles, offer hints or rephrase the question without giving away the answer. Example:
-"Need a hint? Think about how React tracks component updates!"
-Provide brief, encouraging feedback after each answer. Example:
-"Nice! That's a solid answer."
-"Hmm, not quite! Want to try again?"
-Keep the conversation natural and engaging—use casual phrases like "Alright, next up..." or "Let's tackle a tricky one!"
-After 5-7 questions, wrap up the interview smoothly by summarizing their performance. Example:
-"That was great! You handled some tough questions well. Keep sharpening your skills!"
-End on a positive note:
-"Thanks for chatting! Hope to see you crushing projects soon!"
-Key Guidelines:
-✅ Be friendly, engaging, and witty 🎤
-✅ Keep responses short and natural, like a real conversation
-✅ Adapt based on the candidate's confidence level
-✅ Ensure the interview remains focused on React
 `.trim(),
           },
         ],
@@ -127,25 +120,24 @@ Key Guidelines:
     vapi.start(assistantOptions);
   };
 
+  // ✅ Handle VAPI Events
   useEffect(() => {
     if (!vapi) return;
-    // Set up event listeners for Vapi events
+
     const handleMessage = (message) => {
       if (message?.role === "assistant" && message?.content) {
         setSubtitles(message.content);
       }
-      
-      if (message && message?.conversation) {
-        const filteredConversation = message.conversation.filter((msg) => msg.role !== "system") || "";
-        const conversationString = JSON.stringify(filteredConversation, null, 2);
-        conversation.current = conversationString;
+      if (message?.conversation) {
+        const filtered = message.conversation.filter((msg) => msg.role !== "system") || "";
+        conversation.current = JSON.stringify(filtered, null, 2);
       }
     };
 
     const handleSpeechStart = () => {
       setIsSpeaking(true);
       setActiveUser(false);
-      toast('AI is speaking...');
+      toast("AI is speaking...");
     };
 
     const handleSpeechEnd = () => {
@@ -154,132 +146,82 @@ Key Guidelines:
     };
 
     vapi.on("message", handleMessage);
-    vapi.on("call-start", () => {
-      toast('Call started...');
-      setStart(true);
-    });
+    vapi.on("call-start", () => toast("Call started..."));
     vapi.on("speech-start", handleSpeechStart);
     vapi.on("speech-end", handleSpeechEnd);
     vapi.on("call-end", () => {
-      toast('Call has ended. Generating feedback...');
+      toast("Call ended. Generating feedback...");
       setIsGeneratingFeedback(true);
       GenerateFeedback();
     });
 
     return () => {
       vapi.off("message", handleMessage);
-      vapi.off("call-start", () => {});
       vapi.off("speech-start", handleSpeechStart);
       vapi.off("speech-end", handleSpeechEnd);
-      vapi.off("call-end", () => {});
     };
   }, [vapi]);
 
-  const GenerateFeedback = async () => {
-    if (!interviewInfo || !conversation.current) {
-      toast.error("Interview data missing. Please restart the interview.");
-      router.replace(`/interview/${interview_id}`);
-      return;
-    }
-    try {
-      const result = await axios.post("/api/ai-feedback", {
-        conversation: conversation.current,
-      });
-  
-      const Content = result?.data?.content
-        ?.replace("```json", "")
-        ?.replace("```", "")
-        ?.trim();
-  
-      if (!Content) throw new Error("Feedback content is empty");
-  
-      console.log("Cleaned Content:", Content);
-  
-      let parsedTranscript;
-      try {
-        parsedTranscript = JSON.parse(Content);
-      } catch (e) {
-        console.error("Invalid JSON:", Content);
-        throw new Error("Could not parse AI feedback JSON");
-      }
-  
-      const { error: insertError, data } = await supabase
-        .from("interview_results")
-        .insert([
-          {
-            fullname: interviewInfo?.candidate_name,
-            email: interviewInfo?.userEmail,
-            interview_id: interview_id,
-            conversation_transcript: parsedTranscript,
-            recommendations: "Not recommended",
-            completed_at: new Date().toISOString(),
-          },
-        ]);
-  
-      if (insertError) {
-        console.error("Supabase insert error:", insertError);
-        throw new Error("Insert failed");
-      }
+  // ✅ Feedback Generation
+const GenerateFeedback = async () => {
+  if (!interviewInfo || !conversation.current) {
+    toast.error("Interview data missing. Please restart the interview.");
+    router.replace(`/interview/${interview_id}`);
+    return;
+  }
 
-      // After saving feedback, generate new questions for the next candidate
-      try {
-        const aiResult = await axios.post("/api/ai-model", {
-          jobPosition: interviewInfo?.jobPosition,
-          jobDescription: interviewInfo?.jobDescription,
-          duration: interviewInfo?.duration,
-          type: interviewInfo?.type,
-        });
-        const rawContent = aiResult?.data?.content || aiResult?.data?.Content;
-        let newQuestions = null;
-        if (rawContent) {
-          const match = rawContent.match(/```json\s*([\s\S]*?)\s*```/);
-          if (match && match[1]) {
-            newQuestions = JSON.parse(match[1].trim());
-          }
-        }
-        if (newQuestions) {
-          // Update the interview's questionList in Supabase
-          await supabase
-            .from('Interviews')
-            .update({ questionList: newQuestions })
-            .eq('interview_id', interview_id);
-        }
-      } catch (e) {
-        console.error("Failed to generate or update new questions for next candidate", e);
-      }
-  
-      toast.success("Feedback generated successfully!");
-      // Clear localStorage to avoid stale data
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('interviewInfo');
-      }
-      router.replace("/interview/" + interviewInfo?.interview_id + "/completed");
-    } catch (error) {
-      console.error("Feedback generation failed:", error);
-      toast.error("Failed to generate feedback");
-    } finally {
-      setIsGeneratingFeedback(false);
-    }
-  };
-  
+  try {
+    const result = await axios.post("/api/ai-feedback", {
+      conversation: conversation.current,
+    });
+
+    let content = result?.data?.content || "";
+    content = content.replace(/```json|```/g, "").trim();
+
+    // ✅ Extract JSON safely
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error("No valid JSON found in feedback");
+    const parsed = JSON.parse(jsonMatch[0]);
+
+    const { error: insertError } = await supabase.from("interview_results").insert([
+      {
+        fullname: interviewInfo?.candidate_name,
+        email: interviewInfo?.userEmail,
+        interview_id,
+        conversation_transcript: parsed,
+        recommendations: "Not recommended",
+        completed_at: new Date().toISOString(),
+      },
+    ]);
+
+    if (insertError) throw insertError;
+    toast.success("Feedback generated successfully!");
+    localStorage.removeItem("interviewInfo");
+    router.replace(`/interview/${interview_id}/completed`);
+  } catch (error) {
+    console.error("Feedback generation failed:", error);
+    toast.error("Failed to generate feedback");
+  } finally {
+    setIsGeneratingFeedback(false);
+  }
+};
+
+
   const stopInterview = () => {
-    vapi.stop();
+    vapi?.stop();
   };
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-6xl mx-auto">
-        {/* Professional Header */}
         <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
           <div>
             <h1 className="text-2xl font-bold text-gray-800">
               {interviewInfo?.jobPosition || "AI"} Interview Session
             </h1>
-            <p className="text-gray-600">
-              Powered by AI Interview Assistant
-            </p>
+            <p className="text-gray-600">Powered by AI Interview Assistant</p>
           </div>
-          
+
           <div className="flex items-center gap-4 bg-white px-4 py-2 rounded-lg shadow-sm border border-gray-200">
             <Timer className="text-blue-600" />
             <span className="font-mono text-lg font-semibold text-gray-700">
@@ -288,49 +230,46 @@ Key Guidelines:
           </div>
         </header>
 
-        {/* Interview Panels */}
+        {/* Panels */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          {/* AI Recruiter Panel */}
-          <div className={`bg-white rounded-xl p-6 shadow-md border transition-all duration-300 ${isSpeaking ? "border-blue-300 ring-2 ring-blue-100" : "border-gray-200"}`}>
-            <div className="flex flex-col items-center justify-center h-full space-y-4">
+          {/* AI Recruiter */}
+          <div
+            className={`bg-white rounded-xl p-6 shadow-md border transition-all duration-300 ${
+              isSpeaking ? "border-blue-300 ring-2 ring-blue-100" : "border-gray-200"
+            }`}
+          >
+            <div className="flex flex-col items-center space-y-4">
               <div className="relative">
                 {isSpeaking && (
                   <div className="absolute inset-0 rounded-full bg-blue-100 animate-ping opacity-75"></div>
                 )}
                 <div className="relative z-10 w-20 h-20 rounded-full overflow-hidden border-4 border-white shadow-md bg-blue-100">
-                  <Image
-                    src="/AIR.png" // Your AI recruiter image path
-                    alt="AI Recruiter"
-                    width={80}
-                    height={80}
-                    className="object-cover w-full h-full" // Ensures full coverage of the circle
-                    priority
-                  />
+                  <Image src="/AIR.png" alt="AI Recruiter" width={80} height={80} />
                 </div>
               </div>
-              <div className="text-center">
-                <h2 className="text-lg font-semibold text-gray-800">AI Recruiter</h2>
-                <p className="text-sm text-gray-500">Interview HR</p>
-              </div>
+              <h2 className="text-lg font-semibold text-gray-800">AI Recruiter</h2>
+              <p className="text-sm text-gray-500">Interview HR</p>
             </div>
           </div>
 
-          {/* Candidate Panel */}
-          <div className={`bg-white rounded-xl p-6 shadow-md border transition-all duration-300 ${activeUser ? "border-purple-300 ring-2 ring-purple-100" : "border-gray-200"}`}>
-            <div className="flex flex-col items-center justify-center h-full space-y-4">
+          {/* Candidate */}
+          <div
+            className={`bg-white rounded-xl p-6 shadow-md border transition-all duration-300 ${
+              activeUser ? "border-purple-300 ring-2 ring-purple-100" : "border-gray-200"
+            }`}
+          >
+            <div className="flex flex-col items-center space-y-4">
               <div className="relative">
                 {activeUser && (
                   <div className="absolute inset-0 rounded-full bg-purple-100 animate-ping opacity-75"></div>
                 )}
-                <div className="relative z-10 w-20 h-20 rounded-full overflow-hidden border-4 border-white shadow-md bg-gray-100 flex items-center justify-center">
+                <div className="relative z-10 w-20 h-20 rounded-full flex items-center justify-center bg-gray-100 border-4 border-white shadow-md">
                   {userProfile.picture ? (
                     <Image
                       src={userProfile.picture}
                       alt={userProfile.name}
                       width={80}
                       height={80}
-                      className="object-cover"
-                      priority
                     />
                   ) : (
                     <span className="text-2xl font-bold text-gray-600">
@@ -339,58 +278,39 @@ Key Guidelines:
                   )}
                 </div>
               </div>
-              <div className="text-center">
-                <h2 className="text-lg font-semibold text-gray-800">
-                  {userProfile.name}
-                </h2>
-                <p className="text-sm text-gray-500">Candidate</p>
-              </div>
+              <h2 className="text-lg font-semibold text-gray-800">{userProfile.name}</h2>
+              <p className="text-sm text-gray-500">Candidate</p>
             </div>
           </div>
         </div>
 
-        {/* Subtitles Panel */}
-        <div className="bg-white rounded-lg p-4 mb-6 shadow-sm border border-gray-200">
-          <div className="min-h-16 flex items-center justify-center">
-            {subtitles ? (
-              <p className="text-center text-gray-700 animate-fadeIn">
-                "{subtitles}"
-              </p>
-            ) : (
-              <p className="text-center text-gray-400">
-                {isSpeaking ? "AI is speaking..." : "Waiting for response..."}
-              </p>
-            )}
-          </div>
+        {/* Subtitles */}
+        <div className="bg-white rounded-lg p-4 mb-6 shadow-sm border border-gray-200 text-center text-gray-700">
+          {subtitles ? `"${subtitles}"` : isSpeaking ? "AI is speaking..." : "Waiting..."}
         </div>
 
-        {/* Control Panel */}
-        <div className="bg-white rounded-xl p-4 shadow-md border border-gray-200">
-          <div className="flex flex-col items-center">
-            <div className="flex gap-4 mb-4">
-              <AlertConfirmation stopInterview={stopInterview}>
-                <button 
-                  className="p-3 rounded-full bg-red-100 text-red-600 hover:bg-red-200 shadow-sm transition-all flex items-center gap-2"
-                  aria-label="End call"
-                >
-                  <Phone size={20} />
-                  <span>End Interview</span>
-                </button>
-              </AlertConfirmation>
-            </div>
-            
-            <p className="text-sm text-gray-500">
-              {activeUser ? "Please respond..." : "AI is speaking..."}
-            </p>
-          </div>
+        {/* Controls */}
+        <div className="bg-white rounded-xl p-4 shadow-md border border-gray-200 text-center">
+          <AlertConfirmation stopInterview={stopInterview}>
+            <button className="p-3 rounded-full bg-red-100 text-red-600 hover:bg-red-200 shadow-sm transition-all flex items-center gap-2 mx-auto">
+              <Phone size={20} />
+              <span>End Interview</span>
+            </button>
+          </AlertConfirmation>
+          <p className="text-sm text-gray-500 mt-2">
+            {activeUser ? "Please respond..." : "AI is speaking..."}
+          </p>
         </div>
       </div>
+
       {isGeneratingFeedback && (
         <div className="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50">
           <div className="bg-white rounded-xl p-8 max-w-md w-full text-center">
             <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500 mx-auto mb-4"></div>
             <h2 className="text-xl font-bold text-gray-800 mb-2">Generating Feedback</h2>
-            <p className="text-gray-600">Please wait while we analyze your interview...</p>
+            <p className="text-gray-600">
+              Please wait while we analyze your interview...
+            </p>
           </div>
         </div>
       )}

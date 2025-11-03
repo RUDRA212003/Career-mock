@@ -62,26 +62,37 @@ function Interview() {
   }, [user]);
 
   const GetInterviewDetails = async () => {
-    setLoading(true);
-    try {
-      const { data: Interviews, error } = await supabase
-        .from('Interviews')
-        .select('userEmail, jobPosition, jobDescription, duration, type, questionList')
-        .eq('interview_id', interview_id);
+  setLoading(true);
+  try {
+    const { data: Interviews, error } = await supabase
+      .from("interviews")
+       .select('interview_id, "userEmail", jobposition, jobdescription, duration, type, questionlist')
+  .eq("interview_id", interview_id)
 
-      if (error) throw error;
-      if (!Interviews?.length) throw new Error('No interview found');
-      
-      console.log('Interviews:', Interviews);
-      // Set the interview data to state
+    if (error) throw error;
+    if (!Interviews?.length) throw new Error("No interview found");
 
-      setInterviewData(Interviews[0]);
-    } catch (error) {
-      toast.error(error.message || 'Failed to fetch details');
-    } finally {
-      setLoading(false);
-    }
-  };
+    const data = Interviews[0];
+
+    // Normalize key names for frontend use
+    const normalized = {
+      userEmail: data.useremail,
+      jobPosition: data.jobposition,
+      jobDescription: data.jobdescription,
+      duration: data.duration,
+      type: data.type,
+      questionList: data.questionlist,
+    };
+
+    console.log("Interview data (normalized):", normalized);
+    setInterviewData(normalized);
+  } catch (error) {
+    toast.error(error.message || "Failed to fetch details");
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   const validateJoin = () => {
     if (!userName.trim()) {

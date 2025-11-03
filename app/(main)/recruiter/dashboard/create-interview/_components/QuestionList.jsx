@@ -145,7 +145,7 @@ function QuestionList({ formData, onCreateLink }) {
 
       const newCredits = currentCredits - 1;
       const creditUpdateResult = await updateUserCredits(newCredits);
-      
+
       if (!creditUpdateResult.success) {
         toast.error("Failed to deduct credit. Please try again.");
         setSaveLoading(false);
@@ -154,16 +154,26 @@ function QuestionList({ formData, onCreateLink }) {
 
       // Then create the interview
       const { data, error } = await supabase
-        .from("Interviews")
+        .from("interviews")
         .insert([
           {
-            ...formData,
-            questionList: questionList,
+            interview_id,
             userEmail: user?.email,
-            interview_id: interview_id,
+            jobposition: formData.jobPosition,
+            jobdescription: formData.jobDescription,
+            duration: formData.duration,
+            type: formData.type,
+            questionlist: questionList, // jsonb ✅
           },
         ])
         .select();
+
+      if (error) {
+        console.error("Supabase Insert Error:", error);
+      } else {
+        console.log("Inserted successfully:", data);
+      }
+
 
       console.log("Supabase insert result:", { data, error });
 
@@ -206,7 +216,7 @@ function QuestionList({ formData, onCreateLink }) {
           <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">
             Generated Questions
           </h2>
-          
+
           {/* Credit Info */}
           <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
             <div className="flex items-center justify-between">
@@ -219,7 +229,7 @@ function QuestionList({ formData, onCreateLink }) {
               </div>
             </div>
           </div>
-          
+
           {/* Add Question Form */}
           <div className="mb-8 p-4 bg-gray-50 rounded-lg border border-gray-200">
             <h3 className="font-medium mb-3">Add Custom Question</h3>
@@ -241,7 +251,7 @@ function QuestionList({ formData, onCreateLink }) {
                 <option value="situational">Situational</option>
                 <option value="cultural">Cultural Fit</option>
               </select>
-              <Button 
+              <Button
                 onClick={handleAddQuestion}
                 className="flex items-center gap-1"
               >
@@ -250,7 +260,7 @@ function QuestionList({ formData, onCreateLink }) {
               </Button>
             </div>
           </div>
-          
+
           {/* Questions List */}
           <div className="space-y-4">
             {questionList.interviewQuestions.map((item, index) => (
@@ -274,10 +284,10 @@ function QuestionList({ formData, onCreateLink }) {
               </div>
             ))}
           </div>
-          
+
           <div className="flex justify-end mt-10">
-            <Button 
-              onClick={onFinish} 
+            <Button
+              onClick={onFinish}
               disabled={saveLoading || (user?.credits || 0) <= 0}
               className={user?.credits <= 0 ? "bg-gray-400 cursor-not-allowed" : ""}
             >
