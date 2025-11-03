@@ -304,4 +304,5 @@ For support, email support@ai-recruiter.com or join our Slack channel.
 - [Tailwind CSS](https://tailwindcss.com/) - CSS framework
 - [Radix UI](https://www.radix-ui.com/) - UI components
 
----
+---#   C a r e e r - m o c k  
+ 
