@@ -1,14 +1,9 @@
 import crypto from "crypto";
 import { createClient } from "@supabase/supabase-js";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY // Use service role key
-);
-
 export async function POST(req) {
   try {
-    const secret = "mywebhooksecret"; // must match Razorpay webhook secret
+    const secret = "mywebhooksecret"; // must match your Razorpay webhook secret in the dashboard
     const body = await req.text();
     const signature = req.headers.get("x-razorpay-signature");
 
@@ -32,7 +27,7 @@ export async function POST(req) {
 
       console.log(`💰 Payment received from ${email} for ₹${amount}`);
 
-      // Decide credits based on amount
+      // Determine credits based on amount
       let credits = 0;
       if (amount === 249) credits = 100;
       else if (amount === 499) credits = 500;
@@ -43,7 +38,13 @@ export async function POST(req) {
         return new Response("No email in payment data", { status: 400 });
       }
 
-      // Update credits in Supabase users table
+      // Initialize Supabase client (runtime, not at build time)
+      const supabase = createClient(
+        process.env.SUPABASE_URL,
+        process.env.SUPABASE_ANON_KEY
+      );
+
+      // Update credits via RPC function
       const { error } = await supabase.rpc("increment_credits", {
         user_email: email,
         credits_to_add: credits,
@@ -59,7 +60,7 @@ export async function POST(req) {
 
     return new Response("Webhook processed", { status: 200 });
   } catch (error) {
-  console.error("❌ Webhook Error Details:", error.message, error.stack);
-  return new Response("Server error", { status: 500 });
-}
+    console.error("❌ Webhook Error Details:", error.message, error.stack);
+    return new Response("Server error", { status: 500 });
+  }
 }
