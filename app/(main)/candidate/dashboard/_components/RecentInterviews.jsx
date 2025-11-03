@@ -1,4 +1,5 @@
 'use client';
+
 import React, { useEffect, useState } from 'react';
 import { useUser } from '@/app/provider';
 import { supabase } from '@/services/supabaseClient';
@@ -15,7 +16,7 @@ export default function RecentInterviews() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (user) {
+    if (user?.email) {
       fetchRecentInterviews();
     }
   }, [user]);
@@ -23,20 +24,20 @@ export default function RecentInterviews() {
   const fetchRecentInterviews = async () => {
     try {
       setLoading(true);
-      
-      // Fetch recent interview results for this candidate (limit to 3)
+
+      // ✅ Use lowercase table + correct field names
       const { data: results, error } = await supabase
         .from('interview_results')
         .select(`
           *,
-          Interviews (
-            jobPosition,
-            jobDescription,
+          interviews (
+            jobposition,
+            jobdescription,
             type,
             duration,
             created_at
           )
-        `)  
+        `)
         .eq('email', user.email)
         .order('completed_at', { ascending: false })
         .limit(3);
@@ -47,8 +48,8 @@ export default function RecentInterviews() {
       }
 
       setRecentInterviews(results || []);
-    } catch (error) {
-      console.error('Error:', error);
+    } catch (err) {
+      console.error('Unexpected error:', err);
     } finally {
       setLoading(false);
     }
@@ -56,11 +57,15 @@ export default function RecentInterviews() {
 
   const calculateOverallScore = (feedback) => {
     if (!feedback?.rating) return 'N/A';
-    
-    const ratings = Object.values(feedback.rating).filter(val => typeof val === 'number');
+
+    const ratings = Object.values(feedback.rating).filter(
+      (val) => typeof val === 'number'
+    );
     if (ratings.length === 0) return 'N/A';
-    
-    const average = Math.round(ratings.reduce((a, b) => a + b, 0) / ratings.length);
+
+    const average = Math.round(
+      ratings.reduce((a, b) => a + b, 0) / ratings.length
+    );
     return `${average}/10`;
   };
 
@@ -108,6 +113,7 @@ export default function RecentInterviews() {
           )}
         </div>
       </CardHeader>
+
       <CardContent>
         {recentInterviews.length === 0 ? (
           <div className="text-center py-8">
@@ -119,56 +125,66 @@ export default function RecentInterviews() {
           </div>
         ) : (
           <div className="space-y-4">
-            {recentInterviews.map((result, index) => (
-              <div key={result.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <h4 className="font-medium text-sm">
-                      {result.Interviews?.jobPosition || 'Interview'}
-                    </h4>
-                    <Badge variant="outline" className="text-xs">
-                      {result.Interviews?.type || 'Interview'}
-                    </Badge>
-                  </div>
-                  <div className="flex items-center gap-3 text-xs text-gray-500">
-                    <div className="flex items-center gap-1">
-                      <Calendar className="w-3 h-3" />
-                      {moment(result.created_at).format('MMM DD')}
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Clock className="w-3 h-3" />
-                      {result.Interviews?.duration || 'N/A'}
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="flex items-center gap-2">
-                  {result.status === 'completed' ? (
-                    <>
-                      <CheckCircle className="w-4 h-4 text-green-500" />
-                      {result.conversation_transcript?.feedback && (
-                        <Badge 
-                          className={`text-xs ${getScoreColor(calculateOverallScore(result.conversation_transcript.feedback))}`}
-                        >
-                          <Star className="w-3 h-3 mr-1" />
-                          {calculateOverallScore(result.conversation_transcript.feedback)}
-                        </Badge>
-                      )}
-                    </>
-                  ) : (
-                    <>
-                      <VerifiedIcon className="w-4 h-4 text-yellow-500" />
-                      <Badge variant="secondary" className="text-xs">
-                        Completed
+            {recentInterviews.map((result) => {
+              const interview = result.interviews;
+              const feedback = result.conversation_transcript?.feedback;
+              const overallScore = calculateOverallScore(feedback);
+
+              return (
+                <div
+                  key={result.id}
+                  className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                >
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h4 className="font-medium text-sm">
+                        {interview?.jobposition || 'Interview'}
+                      </h4>
+                      <Badge variant="outline" className="text-xs">
+                        {interview?.type || 'Interview'}
                       </Badge>
-                    </>
-                  )}
+                    </div>
+
+                    <div className="flex items-center gap-3 text-xs text-gray-500">
+                      <div className="flex items-center gap-1">
+                        <Calendar className="w-3 h-3" />
+                        {moment(interview?.created_at).format('MMM DD')}
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        {interview?.duration || 'N/A'}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    {result.status === 'completed' ? (
+                      <>
+                        <CheckCircle className="w-4 h-4 text-green-500" />
+                        {feedback && (
+                          <Badge
+                            className={`text-xs ${getScoreColor(overallScore)}`}
+                          >
+                            <Star className="w-3 h-3 mr-1" />
+                            {overallScore}
+                          </Badge>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        <VerifiedIcon className="w-4 h-4 text-yellow-500" />
+                        <Badge variant="secondary" className="text-xs">
+                          Completed
+                        </Badge>
+                      </>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </CardContent>
     </Card>
   );
-} 
+}

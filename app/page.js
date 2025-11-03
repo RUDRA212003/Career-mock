@@ -20,7 +20,7 @@ export default function CareerMockLanding() {
       github: "https://github.com/RUDRA212003",
     },
     {
-      name: "SHIVAKUMAR SIDDALENGESJVARA PARADDI",
+      name: "SHIVAKUMAR SHIDDHALINGESH PARADDI",
       usn: "(1KI22CS102)",
       role: "FRONT END DEVELOPER",
       photo: "/team/shivakumar.jpg",

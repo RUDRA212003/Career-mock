@@ -22,6 +22,8 @@ export default function CandidateProfile() {
   const [originalData, setOriginalData] = useState({});
   const [password, setPassword] = useState("");
   const [passwordSaving, setPasswordSaving] = useState(false);
+
+  // Detect provider
   let provider = null;
   if (typeof window !== 'undefined') {
     try {
@@ -30,24 +32,21 @@ export default function CandidateProfile() {
   }
   const isGoogleUser = provider === 'google';
 
+  // Load profile info
   useEffect(() => {
-    if (user) {
-      loadProfileData();
-    }
+    if (user) loadProfileData();
   }, [user]);
 
   const loadProfileData = async () => {
     try {
       setLoading(true);
-      
-      // Get user data from Provider context
+
       let userData = {
         fullname: user?.name || user?.email?.split('@')[0] || '',
         email: user?.email || '',
         picture: user?.picture || null
       };
 
-      // Try to get additional data from users table
       if (user?.email) {
         const { data: userRecord, error } = await supabase
           .from('users')
@@ -67,8 +66,8 @@ export default function CandidateProfile() {
 
       setProfileData(userData);
       setOriginalData(userData);
-    } catch (error) {
-      console.error('Error loading profile:', error);
+    } catch (err) {
+      console.error('Error loading profile:', err);
       toast.error('Failed to load profile data');
     } finally {
       setLoading(false);
@@ -76,23 +75,19 @@ export default function CandidateProfile() {
   };
 
   const handleInputChange = (field, value) => {
-    setProfileData(prev => ({
-      ...prev,
-      [field]: value
-    }));
+    setProfileData(prev => ({ ...prev, [field]: value }));
   };
 
+  // ✅ Corrected image upload function using bucket "profile photo"
   const handlePictureUpload = async (event) => {
     const file = event.target.files[0];
     if (!file) return;
 
-    // Validate file type
     if (!file.type.startsWith('image/')) {
       toast.error('Please select an image file');
       return;
     }
 
-    // Validate file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
       toast.error('Image size should be less than 5MB');
       return;
@@ -100,12 +95,16 @@ export default function CandidateProfile() {
 
     try {
       setSaving(true);
-      
-      // Upload to Supabase storage
       const fileName = `profile-${user.email}-${Date.now()}`;
+
+      // ✅ Upload to the correct bucket name
       const { data, error } = await supabase.storage
-        .from('profile-pictures')
-        .upload(fileName, file);
+        .from('profile photo')
+        .upload(fileName, file, {
+          cacheControl: '3600',
+          upsert: true,
+          contentType: file.type,
+        });
 
       if (error) {
         console.error('Upload error:', error);
@@ -113,29 +112,24 @@ export default function CandidateProfile() {
         return;
       }
 
-      // Get public URL
-      const { data: urlData } = supabase.storage
-        .from('profile-pictures')
+      // ✅ Get public URL
+      const { data: publicData } = supabase.storage
+        .from('profile photo')
         .getPublicUrl(fileName);
 
-      const newPictureUrl = urlData.publicUrl;
+      const newPictureUrl = publicData?.publicUrl;
 
-      // Update local state
-      setProfileData(prev => ({
-        ...prev,
-        picture: newPictureUrl
-      }));
-
-      // Immediately save to database
+      // ✅ Update database
       const { error: updateError } = await supabase
         .from('users')
-        .upsert({
-          email: user.email,
-          name: profileData.fullname,
-          picture: newPictureUrl,
-        }, {
-          onConflict: 'email'
-        });
+        .upsert(
+          {
+            email: user.email,
+            name: profileData.fullname,
+            picture: newPictureUrl,
+          },
+          { onConflict: 'email' }
+        );
 
       if (updateError) {
         console.error('Database update error:', updateError);
@@ -143,11 +137,9 @@ export default function CandidateProfile() {
         return;
       }
 
-      // Update original data to reflect the change
-      setOriginalData(prev => ({
-        ...prev,
-        picture: newPictureUrl
-      }));
+      // ✅ Update local UI state
+      setProfileData(prev => ({ ...prev, picture: newPictureUrl }));
+      setOriginalData(prev => ({ ...prev, picture: newPictureUrl }));
 
       toast.success('Profile picture updated successfully!');
     } catch (error) {
@@ -166,17 +158,16 @@ export default function CandidateProfile() {
 
     try {
       setSaving(true);
-
-      // Update users table
       const { error } = await supabase
         .from('users')
-        .upsert({
-          email: user.email,
-          name: profileData.fullname,
-          picture: profileData.picture,
-        }, {
-          onConflict: 'email'
-        });
+        .upsert(
+          {
+            email: user.email,
+            name: profileData.fullname,
+            picture: profileData.picture,
+          },
+          { onConflict: 'email' }
+        );
 
       if (error) {
         console.error('Update error:', error);
@@ -186,8 +177,8 @@ export default function CandidateProfile() {
 
       setOriginalData(profileData);
       toast.success('Profile updated successfully!');
-    } catch (error) {
-      console.error('Error saving profile:', error);
+    } catch (err) {
+      console.error('Error saving profile:', err);
       toast.error('Failed to save profile');
     } finally {
       setSaving(false);
@@ -205,16 +196,14 @@ export default function CandidateProfile() {
         toast.success('Password changed successfully!');
         setPassword("");
       }
-    } catch (e) {
+    } catch {
       toast.error('Error changing password');
     } finally {
       setPasswordSaving(false);
     }
   };
 
-  const hasChanges = () => {
-    return JSON.stringify(profileData) !== JSON.stringify(originalData);
-  };
+  const hasChanges = () => JSON.stringify(profileData) !== JSON.stringify(originalData);
 
   if (loading) {
     return (
@@ -233,7 +222,7 @@ export default function CandidateProfile() {
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
-        {/* Profile Picture Section */}
+        {/* Profile Picture */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -277,7 +266,7 @@ export default function CandidateProfile() {
           </CardContent>
         </Card>
 
-        {/* Personal Information Section */}
+        {/* Personal Information */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -296,13 +285,12 @@ export default function CandidateProfile() {
                   placeholder="Enter your full name"
                 />
               </div>
-              
+
               <div>
                 <Label htmlFor="email">Email Address</Label>
                 <Input
                   id="email"
                   value={profileData.email}
-                  placeholder="Enter your email"
                   type="email"
                   disabled
                 />
@@ -312,11 +300,7 @@ export default function CandidateProfile() {
               </div>
             </div>
 
-            <Button 
-              onClick={handleSave}
-              disabled={!hasChanges() || saving}
-              className="w-full"
-            >
+            <Button onClick={handleSave} disabled={!hasChanges() || saving} className="w-full">
               {saving ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -332,51 +316,50 @@ export default function CandidateProfile() {
           </CardContent>
         </Card>
 
- {/* Security Section */}
- <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <User className="w-5 h-5" />
-            Security
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div>
-            <Label htmlFor="password" className="py-2">Change Password</Label>
-            <Input
-              id="password"
-              type="password"
-              value={isGoogleUser ? 'You can\'t change the password because you login with Google OAuth' : password}
-              onChange={e => setPassword(e.target.value)}
-              placeholder={isGoogleUser ? '' : 'Enter new password'}
-              disabled={isGoogleUser || passwordSaving}
-              
-            />
-            {isGoogleUser && (
-              <p className="text-xs text-gray-500 mt-1">You can&apos;t change the password because you login with Google OAuth</p>
-            )}
-          </div>
-          <Button
-            onClick={handlePasswordChange}
-            disabled={isGoogleUser || !password || passwordSaving}
-            className="w-full"
-          >
-            {passwordSaving ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Changing...
-              </>
-            ) : (
-              'Change Password'
-            )}
-          </Button>
-        </CardContent>
-      </Card>
-      
-
+        {/* Security */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <User className="w-5 h-5" />
+              Security
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <Label htmlFor="password" className="py-2">Change Password</Label>
+              <Input
+                id="password"
+                type="password"
+                value={isGoogleUser ? "You can't change the password because you login with Google OAuth" : password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder={isGoogleUser ? '' : 'Enter new password'}
+                disabled={isGoogleUser || passwordSaving}
+              />
+              {isGoogleUser && (
+                <p className="text-xs text-gray-500 mt-1">
+                  You can&apos;t change the password because you login with Google OAuth
+                </p>
+              )}
+            </div>
+            <Button
+              onClick={handlePasswordChange}
+              disabled={isGoogleUser || !password || passwordSaving}
+              className="w-full"
+            >
+              {passwordSaving ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Changing...
+                </>
+              ) : (
+                'Change Password'
+              )}
+            </Button>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Account Information */}
+      {/* Account Info */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -393,17 +376,14 @@ export default function CandidateProfile() {
             <div>
               <Label className="text-sm font-medium text-gray-500">Member Since</Label>
               <p className="text-sm text-gray-900">
-                {user?.created_at ? 
-                  new Date(user.created_at).toLocaleDateString() : 
-                  'N/A'
-                }
+                {user?.created_at
+                  ? new Date(user.created_at).toLocaleDateString()
+                  : 'N/A'}
               </p>
             </div>
           </div>
         </CardContent>
       </Card>
-
-     
     </div>
   );
-} 
+}
