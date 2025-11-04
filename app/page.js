@@ -34,7 +34,7 @@ export default function CareerMockLanding() {
       name: "PRATHIBHA B R",
       usn: "(1KI22CS085)",
       role: "DATABASE DESIGNER",
-      photo: "/team/prathibha.jpg",
+      photo: "/team/prathi.jpg",
       linkedin: "https://www.linkedin.com/in/prathibha-br/",
       github: "https://github.com/prathibha",
     },

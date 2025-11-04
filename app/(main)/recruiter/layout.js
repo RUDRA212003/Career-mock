@@ -1,52 +1,41 @@
 'use client';
 import React, { useEffect, useState } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import DashboardProvider from './provider';
+import WelcomeContainer from './dashboard/_components/WelcomeContainer';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 import { supabase } from '@/services/supabaseClient';
+import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
 
-export default function RecruiterLayout({ children }) {
+function DashboardLayout({ children }) {
   const router = useRouter();
-  const pathname = usePathname();
   const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState(null);
 
   useEffect(() => {
     const checkAuth = async () => {
-      setLoading(true);
       const { data, error } = await supabase.auth.getUser();
 
       if (error || !data?.user) {
-        console.log('No recruiter session found → redirecting to login');
         toast.error('Please log in to continue.');
-        router.push('/login');
+        router.push('/login'); // ✅ Redirects to /login now
         return;
       }
 
-      // Optional: Restrict access to only recruiter users
-      if (!data.user.email?.includes('@recruiter')) {
-        toast.error('Unauthorized access');
-        router.push('/');
-        return;
-      }
-
-      setUser(data.user);
       setLoading(false);
     };
 
     checkAuth();
 
-    // Listen for auth state changes (logout/login)
+    // Listen for logout
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!session) {
-        router.push('/login');
+        router.push('/login'); // ✅ Also redirects to /login on logout
       }
     });
 
-    return () => {
-      listener?.subscription.unsubscribe();
-    };
-  }, [router, pathname]);
+    return () => listener?.subscription.unsubscribe();
+  }, [router]);
 
   if (loading) {
     return (
@@ -60,9 +49,14 @@ export default function RecruiterLayout({ children }) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Recruiter Navigation or Sidebar can go here */}
-      {children}
-    </div>
+    <DashboardProvider>
+      <div className="p-10 w-full space-y-6">
+        <WelcomeContainer />
+        {children}
+      </div>
+      <SpeedInsights />
+    </DashboardProvider>
   );
 }
+
+export default DashboardLayout;

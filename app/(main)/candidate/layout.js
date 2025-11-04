@@ -1,45 +1,33 @@
 'use client';
 import React, { useEffect, useState } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import DashboardProvider from './provider';
+import WelcomeContainer from './dashboard/_components/WelcomeContainer';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 import { supabase } from '@/services/supabaseClient';
-import { toast } from 'sonner';
+import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
-export default function CandidateLayout({ children }) {
+function DashboardLayout({ children }) {
   const router = useRouter();
-  const pathname = usePathname();
   const [loading, setLoading] = useState(true);
-  const [user, setUser] = useState(null);
 
   useEffect(() => {
     const checkAuth = async () => {
-      setLoading(true);
-
-      // ✅ Get current Supabase user session
       const { data, error } = await supabase.auth.getUser();
 
-      // ❌ No session → redirect to candidate login
       if (error || !data?.user) {
-        console.log('No candidate session found → redirecting to candidate login');
         toast.error('Please log in to continue.');
-        router.replace('/login');
+        router.replace('/login'); // Redirect to login if not authenticated
         return;
       }
 
-      // ✅ (Optional) Check for valid candidate role/email
-      if (!data.user.email?.includes('@candidate')) {
-        toast.error('Unauthorized access');
-        router.replace('/');
-        return;
-      }
-
-      setUser(data.user);
       setLoading(false);
     };
 
     checkAuth();
 
-    // ✅ Handle logout/login changes
+    // Listen for logout events
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!session) {
         router.replace('/login');
@@ -47,7 +35,7 @@ export default function CandidateLayout({ children }) {
     });
 
     return () => listener?.subscription.unsubscribe();
-  }, [router, pathname]);
+  }, [router]);
 
   if (loading) {
     return (
@@ -61,9 +49,14 @@ export default function CandidateLayout({ children }) {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* 🔹 Optional: Candidate Navbar or Header here */}
-      {children}
-    </div>
+    <DashboardProvider>
+      <div className="p-10 w-full space-y-6">
+        <WelcomeContainer />
+        {children}
+      </div>
+      <SpeedInsights />
+    </DashboardProvider>
   );
 }
+
+export default DashboardLayout;
