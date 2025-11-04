@@ -1,19 +1,69 @@
 'use client';
-import React from 'react';
-import DashboardProvider from './provider';
-import WelcomeContainer from './dashboard/_components/WelcomeContainer';
-import { SpeedInsights } from '@vercel/speed-insights/next';
+import React, { useEffect, useState } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
+import { supabase } from '@/services/supabaseClient';
+import { toast } from 'sonner';
+import { Loader2 } from 'lucide-react';
 
-function DashboardLayout({ children }) {
-  return (
-    <DashboardProvider>
-      <div className="p-10 w-full space-y-6">
-        <WelcomeContainer />
-        {children}
+export default function CandidateLayout({ children }) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      setLoading(true);
+
+      // ✅ Get current Supabase user session
+      const { data, error } = await supabase.auth.getUser();
+
+      // ❌ No session → redirect to candidate login
+      if (error || !data?.user) {
+        console.log('No candidate session found → redirecting to candidate login');
+        toast.error('Please log in to continue.');
+        router.replace('/login');
+        return;
+      }
+
+      // ✅ (Optional) Check for valid candidate role/email
+      if (!data.user.email?.includes('@candidate')) {
+        toast.error('Unauthorized access');
+        router.replace('/');
+        return;
+      }
+
+      setUser(data.user);
+      setLoading(false);
+    };
+
+    checkAuth();
+
+    // ✅ Handle logout/login changes
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!session) {
+        router.replace('/login');
+      }
+    });
+
+    return () => listener?.subscription.unsubscribe();
+  }, [router, pathname]);
+
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-gray-50">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="animate-spin w-8 h-8 text-blue-600" />
+          <p className="text-gray-600 text-sm">Checking authentication...</p>
+        </div>
       </div>
-      <SpeedInsights />
-    </DashboardProvider>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* 🔹 Optional: Candidate Navbar or Header here */}
+      {children}
+    </div>
   );
 }
-
-export default DashboardLayout;
