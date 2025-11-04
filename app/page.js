@@ -34,7 +34,7 @@ export default function CareerMockLanding() {
       name: "PRATHIBHA B R",
       usn: "(1KI22CS085)",
       role: "DATABASE DESIGNER",
-      photo: "/team/prathibhaa.jpg",
+      photo: "/team/prathibha.jpg",
       linkedin: "https://www.linkedin.com/in/prathibha-br/",
       github: "https://github.com/prathibha",
     },
@@ -49,7 +49,7 @@ export default function CareerMockLanding() {
   ];
 
   const companies = [
-    "/clientLogos/Eeshanya.png",
+    "/clientLogos/eeshanya.png",
     "/clientLogos/Google.png",
     "/clientLogos/hrh.jpeg",
     "/clientLogos/tata.png",
