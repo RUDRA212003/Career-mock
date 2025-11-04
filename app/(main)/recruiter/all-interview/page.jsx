@@ -63,7 +63,7 @@ function AllInterview() {
           <h2 className="text-base">You don't have any interviews created</h2>
           <Button
             className="cursor-pointer"
-            onClick={() => router.push("/dashboard/create-interview")}
+            onClick={() => router.push("/recruiter/dashboard/create-interview")}
           >
             + Create New Interview
           </Button>

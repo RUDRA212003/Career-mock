@@ -41,7 +41,17 @@ export function LoginForm(props) {
       const { success, error } = await signInUser(email, password);
 
       if (!success) {
-        toast.error(error || "Login failed. Please try again.");
+        toast.custom((t) => (
+  <div
+    className="bg-red-600 text-white px-4 py-2 rounded shadow-lg flex items-center gap-2"
+    onClick={() => toast.dismiss(t.id)}
+  >
+    ❌ {error}. If you’re a new user, please create an account by clicking “Sign Up”. 
+After registering, make sure to confirm your email by checking your inbox.
+
+  </div>
+));
+
         setLoading(false);
         return;
       }
@@ -108,7 +118,7 @@ export function LoginForm(props) {
             <div className="flex items-center">
               <Label htmlFor="password">Password</Label>
               <a
-                href="#"
+                href="/forgot-password"
                 className="ml-auto text-sm underline-offset-4 hover:underline"
               >
                 Forgot your password?

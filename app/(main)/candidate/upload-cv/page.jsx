@@ -4,46 +4,60 @@ import Dropzone from 'shadcn-dropzone';
 import { supabase } from '@/services/supabaseClient';
 import { toast } from 'sonner';
 
-
 export default function UploadCV() {
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState(null);
   const [uploadedFile, setUploadedFile] = useState(null);
 
+  // ✅ Fetch logged-in user and ensure they exist in `users` table
   useEffect(() => {
     async function fetchUser() {
-      const {
-        data: { session },
-        error,
-      } = await supabase.auth.getSession();
-  
-      if (error || !session) {
-        toast.error('User not logged in');
-        return;
+      try {
+        const {
+          data: { session },
+          error: sessionError,
+        } = await supabase.auth.getSession();
+
+        if (sessionError || !session) {
+          toast.error('User not logged in');
+          return;
+        }
+
+        const userEmail = session.user.email;
+
+        // Check if user exists
+        const { data: userData, error: userError } = await supabase
+          .from('users')
+          .select('id, email, cv_file_path')
+          .eq('email', userEmail)
+          .single();
+
+        if (userError && userError.code === 'PGRST116') {
+          // Create the user automatically if they don't exist
+          const { data: newUser, error: insertError } = await supabase
+            .from('users')
+            .insert({ email: userEmail })
+            .select()
+            .single();
+
+          if (insertError) throw insertError;
+          setUser(newUser);
+        } else if (userError) {
+          console.error('User fetch error:', userError);
+          toast.error('Failed to load user data');
+        } else {
+          setUser(userData);
+        }
+      } catch (err) {
+        console.error('fetchUser error:', err);
+        toast.error('Unexpected error loading user');
       }
-  
-      const userEmail = session.user.email;
-  
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('id, cv_file_path')
-        .eq('email', userEmail)
-        .single();
-  
-      if (userError) {
-        console.error('Failed to fetch user:', userError);
-        toast.error('Failed to load user data');
-        return;
-      }
-  
-      setUser(userData);
     }
-  
+
     fetchUser();
   }, []);
 
-
-  // Handle file drop
+  // ✅ Handle file drop
   const handleFileDrop = (files) => {
     if (files.length > 0) {
       setUploadedFile(files[0]);
@@ -51,57 +65,56 @@ export default function UploadCV() {
     }
   };
 
+  // ✅ Handle submit
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     if (!uploadedFile) {
       toast.error('Please upload your CV before submitting.');
       return;
     }
     if (!user) {
-      toast.error('User not loaded.');
+      toast.error('User not loaded yet.');
       return;
     }
 
     setLoading(true);
 
     try {
-      // Define storage path
       const fileExt = uploadedFile.name.split('.').pop();
       const fileName = `cv.${fileExt}`;
       const filePath = `cv/${user.id}/${fileName}`;
 
-      // Upload file to Supabase Storage
-      const { error: uploadError } = await supabase.storage
+      console.log('Uploading file to:', filePath);
+
+      const { data: uploadData, error: uploadError } = await supabase.storage
         .from('cv-uploads')
         .upload(filePath, uploadedFile, { upsert: true });
 
-      if (uploadError) {
-        throw uploadError;
-      }
+      if (uploadError) throw uploadError;
 
-      // Update user record with file path
+      console.log('Upload success:', uploadData);
+
+      // Update DB record
       const { error: updateError } = await supabase
         .from('users')
         .update({ cv_file_path: filePath })
         .eq('id', user.id);
 
-      if (updateError) {
-        throw updateError;
-      }
+      if (updateError) throw updateError;
 
-      // Refresh user data to update UI
       setUser({ ...user, cv_file_path: filePath });
       setUploadedFile(null);
-      toast.success('CV uploaded successfully!');
+      toast.success('✅ CV uploaded successfully!');
     } catch (error) {
-      console.error(error);
-      toast.error('Failed to upload CV.');
+      console.error('Upload error details:', error);
+      toast.error(`Failed to upload CV: ${error.message || 'Unknown error'}`);
     } finally {
       setLoading(false);
     }
   };
 
-  // Delete CV file from storage and DB
+  // ✅ Delete CV
   const handleDelete = async () => {
     if (!user || !user.cv_file_path) return;
 
@@ -121,10 +134,10 @@ export default function UploadCV() {
       if (updateError) throw updateError;
 
       setUser({ ...user, cv_file_path: null });
-      toast.success('CV deleted.');
+      toast.success('🗑️ CV deleted successfully.');
     } catch (error) {
-      console.error(error);
-      toast.error('Failed to delete CV.');
+      console.error('Delete error details:', error);
+      toast.error(`Failed to delete CV: ${error.message || 'Unknown error'}`);
     } finally {
       setLoading(false);
     }
@@ -139,23 +152,23 @@ export default function UploadCV() {
           <p>Loading user...</p>
         ) : user.cv_file_path ? (
           <div>
-           <div className="flex items-center gap-3 mb-4">
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    className="h-6 w-6 text-indigo-600"
-    fill="none"
-    viewBox="0 0 24 24"
-    stroke="currentColor"
-  >
-    <path
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth={2}
-      d="M7 16V4a1 1 0 011-1h8a1 1 0 011 1v12m-4 4h-4m4 0a2 2 0 004-2m-4 2a2 2 0 01-4-2"
-    />
-  </svg>
-  <span className="text-gray-800 font-medium">CV Uploaded</span>
-</div>
+            <div className="flex items-center gap-3 mb-4">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-6 w-6 text-indigo-600"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M7 16V4a1 1 0 011-1h8a1 1 0 011 1v12m-4 4h-4m4 0a2 2 0 004-2m-4 2a2 2 0 01-4-2"
+                />
+              </svg>
+              <span className="text-gray-800 font-medium">CV Uploaded</span>
+            </div>
 
             <button
               onClick={handleDelete}

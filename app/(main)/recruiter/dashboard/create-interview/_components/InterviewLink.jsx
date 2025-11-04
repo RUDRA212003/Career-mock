@@ -1,36 +1,49 @@
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { ArrowLeft, Calendar, Clock, Copy, Linkedin, List, Mail, Phone, Plus } from 'lucide-react';
-import Image from 'next/image';
-import { useRouter } from 'next/navigation';
-import React from 'react';
-import { toast } from 'sonner';
+"use client";
+
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  ArrowLeft,
+  Calendar,
+  Clock,
+  Copy,
+  Linkedin,
+  List,
+  Mail,
+  Phone,
+  Plus,
+} from "lucide-react";
+import { useRouter } from "next/navigation";
+import React from "react";
+import { toast } from "sonner";
 
 const InterviewLink = ({ interview_id, formData }) => {
   const router = useRouter();
-  
-  // Get clean base URL (remove trailing slash if present)
-  const baseUrl = process.env.NEXT_PUBLIC_HOST_URL.replace(/\/$/, '');
-  // Construct full interview URL
+
+  const baseUrl = process.env.NEXT_PUBLIC_HOST_URL?.replace(/\/$/, "") || "";
   const url = `${baseUrl}/${interview_id}`;
 
-  const getInterviewURL = () => {
-    return url;
-  };
+  const getInterviewURL = () => url;
 
   const expiresAt = () => {
-    const futureDate = new Date(new Date(formData?.created_at || '2025-04-14 19:09:50.492361+00').getTime() + 30 * 24 * 60 * 60 * 1000);
-    const options = { year: 'numeric', month: 'long', day: 'numeric' };
-    return futureDate.toLocaleDateString('en-US', options);
+    const futureDate = new Date(
+      new Date(formData?.created_at || "2025-04-14T19:09:50Z").getTime() +
+        30 * 24 * 60 * 60 * 1000
+    );
+    return futureDate.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
   };
 
   const onCopyLink = async () => {
     await navigator.clipboard.writeText(url);
-    toast.success('Interview link copied!');
+    toast.success("Interview link copied!");
   };
 
   const shareVia = (platform) => {
-    const interviewTitle = formData?.title || 'AI Interview';
+    const interviewTitle = formData?.title || "AI Interview";
     const defaultMessage = `Join my ${interviewTitle} interview: ${url}`;
     const emailSubject = `Invitation to ${interviewTitle}`;
     const emailBody = `Dear Candidate,
@@ -42,107 +55,145 @@ ${url}
 
 Please ensure you complete the interview before the deadline. If you have any questions or require assistance, feel free to reach out.
 
-Looking forward to your responses!
+Best regards,`;
 
-Best regards,
-`;
-    
-    let shareUrl = '';
-    
-    switch(platform) {
-      case 'email':
-        shareUrl = `mailto:?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
+    let shareUrl = "";
+
+    switch (platform) {
+      case "email":
+        shareUrl = `mailto:?subject=${encodeURIComponent(
+          emailSubject
+        )}&body=${encodeURIComponent(emailBody)}`;
         window.location.href = shareUrl;
         break;
-      case 'linkedin':
-        shareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}`;
-        window.open(shareUrl, '_blank', 'width=600,height=400');
+      case "linkedin":
+        shareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(
+          url
+        )}`;
+        window.open(shareUrl, "_blank", "width=600,height=400");
         break;
-      case 'whatsapp':
-        shareUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(defaultMessage)}`;
-        window.open(shareUrl, '_blank');
+      case "whatsapp":
+        shareUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(
+          defaultMessage
+        )}`;
+        window.open(shareUrl, "_blank");
         break;
       default:
         break;
     }
-    
-    // Track sharing event if analytics are set up
-    // analytics.track('Interview Shared', { platform, interview_id });
   };
 
   return (
-    <div className='flex flex-col items-center justify-center space-y-10'>
-      <div className='flex flex-col items-center'>
-        <Image 
-          src={'/tick3.png'} 
-          alt='success_icon' 
-          width={200} 
-          height={300} 
-          className='size-[50px]' 
-        />
-        <h2 className='font-bold text-lg mt-3'>Your AI Interview is Ready!</h2>
-        <p className='mt-3 text-muted-foreground'>Share this link with candidates to start the interview process</p>
+    <div className="flex flex-col items-center justify-center gap-8 sm:gap-10 w-full px-4 sm:px-6 md:px-10 py-6">
+      {/* ✅ Success Header with Rounded Video */}
+      <div className="flex flex-col items-center text-center">
+        <video
+  src="/check-suc.mp4"
+  autoPlay
+  muted
+  playsInline
+  loop={false}
+  className="w-14 h-14 sm:w-12 sm:h-12 md:w-16 md:h-16 object-cover rounded-xl overflow-hidden"
+/>
+
+
+        <h2 className="font-bold text-lg sm:text-xl text-gray-800 mt-4">
+          Your AI Interview is Ready!
+        </h2>
+        <p className="mt-2 text-gray-500 text-sm sm:text-base max-w-md">
+          Share this link with candidates to start the interview process.
+        </p>
       </div>
 
-      <div className='bg-white shadow rounded-lg p-7 w-full'>
-        <div className='flex items-center justify-between'>
-          <h2 className='font-bold'>Interview Link</h2>
-          <h2 className='text-primary bg-blue-50 rounded-xl text-sm px-2 py-1'>Valid for 30 days</h2>
+      {/* ✅ Interview Info Card */}
+      <div className="bg-white shadow-lg rounded-3xl p-6 sm:p-8 w-full max-w-2xl">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <h2 className="font-semibold text-base sm:text-lg text-gray-800">
+            Interview Link
+          </h2>
+          <span className="text-primary bg-blue-50 rounded-full text-xs sm:text-sm px-3 py-1 text-center font-medium">
+            Valid for 30 days
+          </span>
         </div>
-        <div className='flex items-center justify-around gap-2 mt-5'>
-          <Input value={getInterviewURL()} readOnly />
-          <Button onClick={onCopyLink}>
-            <Copy className='size-4 mr-2' /> 
-            Copy Link
+
+        {/* Link + Copy Button */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mt-5">
+          <Input
+            value={getInterviewURL()}
+            readOnly
+            className="text-sm border-gray-300 rounded-full"
+          />
+          <Button
+            onClick={onCopyLink}
+            className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-full"
+          >
+            <Copy className="size-4" /> Copy
           </Button>
         </div>
 
-        <hr className='my-7' />
+        <hr className="my-6 border-gray-200" />
 
-        <div className='flex items-center space-x-5'>
-          <h2 className='flex items-center gap-2 text-sm text-gray-500'>
-            <Clock className='size-4' />
-            {formData.duration || '30 min'}
-          </h2>
-          <h2 className='flex items-center gap-2 text-sm text-gray-500'>
-            <List className='size-4' />
-            {formData?.questList?.length || '10'} Questions
-          </h2>
-          <h2 className='flex items-center gap-2 text-sm text-gray-500'>
-            <Calendar className='size-4' />
+        {/* Interview Details */}
+        <div className="flex flex-col sm:flex-row sm:flex-wrap sm:justify-start gap-3 sm:gap-6 text-sm text-gray-600">
+          <div className="flex items-center gap-2 bg-blue-50 px-3 py-2 rounded-full">
+            <Clock className="w-4 h-4 text-blue-600" />
+            {formData?.duration || "30 min"}
+          </div>
+          <div className="flex items-center gap-2 bg-blue-50 px-3 py-2 rounded-full">
+            <List className="w-4 h-4 text-blue-600" />
+            {formData?.questList?.length || "10"} Questions
+          </div>
+          <div className="flex items-center gap-2 bg-blue-50 px-3 py-2 rounded-full">
+            <Calendar className="w-4 h-4 text-blue-600" />
             Valid Till: {expiresAt()}
-          </h2>
+          </div>
         </div>
       </div>
 
-      <div className='w-full bg-white p-5 rounded-lg'>
-        <h2 className='font-bold'>Share via</h2>
-        <div className='grid grid-cols-3 gap-5 mt-5'>
-          <Button variant='outline' onClick={() => shareVia('email')} className="flex items-center gap-2">
-            <Mail className='size-4' /> Email
+      {/* ✅ Share Section */}
+      <div className="w-full bg-white shadow-lg p-6 sm:p-8 rounded-3xl max-w-2xl">
+        <h2 className="font-semibold text-base sm:text-lg mb-4 text-gray-800">
+          Share via
+        </h2>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-5">
+          <Button
+            variant="outline"
+            onClick={() => shareVia("email")}
+            className="flex items-center justify-center gap-2 w-full rounded-full"
+          >
+            <Mail className="w-4 h-4" /> Email
           </Button>
-          <Button variant='outline' onClick={() => shareVia('linkedin')} className="flex items-center gap-2">
-            <Linkedin className='size-4' /> LinkedIn
+          <Button
+            variant="outline"
+            onClick={() => shareVia("linkedin")}
+            className="flex items-center justify-center gap-2 w-full rounded-full"
+          >
+            <Linkedin className="w-4 h-4" /> LinkedIn
           </Button>
-          <Button variant='outline' onClick={() => shareVia('whatsapp')} className="flex items-center gap-2">
-            <Phone className='size-4' /> WhatsApp
+          <Button
+            variant="outline"
+            onClick={() => shareVia("whatsapp")}
+            className="flex items-center justify-center gap-2 w-full rounded-full"
+          >
+            <Phone className="w-4 h-4" /> WhatsApp
           </Button>
         </div>
       </div>
 
-      <div className='grid grid-cols-2 gap-5 w-full'>
-        <Button 
-          variant='outline' 
-          onClick={() => router.push('/dashboard')}
-          className='flex items-center gap-2'
+      {/* ✅ Action Buttons */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5 w-full max-w-2xl">
+        <Button
+          variant="outline"
+          onClick={() => router.push("/dashboard")}
+          className="flex items-center justify-center gap-2 py-3 sm:py-2 text-sm sm:text-base rounded-full"
         >
-          <ArrowLeft className='size-4' /> Back to Dashboard
+          <ArrowLeft className="w-4 h-4" /> Back to Dashboard
         </Button>
-        <Button 
-          onClick={() => router.push('/dashboard/create-interview')}
-          className='flex items-center gap-2'
+        <Button
+          onClick={() => router.push("/dashboard/create-interview")}
+          className="flex items-center justify-center gap-2 py-3 sm:py-2 text-sm sm:text-base rounded-full"
         >
-          <Plus className='size-4' /> Create New Interview
+          <Plus className="w-4 h-4" /> Create New Interview
         </Button>
       </div>
     </div>

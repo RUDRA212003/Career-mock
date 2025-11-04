@@ -1,14 +1,17 @@
 "use client";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Briefcase, Bot, Sparkles, ArrowRight } from "lucide-react";
+import { Briefcase, Bot, Sparkles, ArrowRight, Star } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FaLinkedin, FaGithub } from "react-icons/fa";
+import { useState } from "react";
+import { Dialog } from "@headlessui/react";
 
 export default function CareerMockLanding() {
   const router = useRouter();
+  const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
 
   const teamMembers = [
     {
@@ -20,7 +23,7 @@ export default function CareerMockLanding() {
       github: "https://github.com/RUDRA212003",
     },
     {
-      name: "SHIVAKUMAR SHIDDHALINGESH PARADDI",
+      name: "SHIVAKUMAR SHIDDHALINGESH PARADDI",
       usn: "(1KI22CS102)",
       role: "FRONT END DEVELOPER",
       photo: "/team/shivakumar.jpg",
@@ -31,7 +34,7 @@ export default function CareerMockLanding() {
       name: "PRATHIBHA B R",
       usn: "(1KI22CS085)",
       role: "DATABASE DESIGNER",
-      photo: "/team/prathibha.jpg",
+      photo: "/team/prathibhaa.jpg",
       linkedin: "https://www.linkedin.com/in/prathibha-br/",
       github: "https://github.com/prathibha",
     },
@@ -55,16 +58,64 @@ export default function CareerMockLanding() {
     "/clientLogos/Wipro.svg",
   ];
 
+  const reviews = [
+    {
+      name: "Ananya Rao",
+      role: "Candidate",
+      text: "Career Mock helped me overcome interview anxiety. The AI feedback felt like a real recruiter’s review!",
+      rating: 5,
+    },
+    {
+      name: "Rahul Mehta",
+      role: "Recruiter",
+      text: "I found strong candidates through mock interviews here — it saves hours of pre-screening.",
+      rating: 4,
+    },
+    {
+      name: "Priya Sharma",
+      role: "Candidate",
+      text: "The detailed performance analysis after every session is incredible. I finally cracked my dream job!",
+      rating: 5,
+    },
+    {
+      name: "Arjun Patel",
+      role: "Recruiter",
+      text: "This platform is a gem! Candidates come well-prepared, making hiring smoother than ever.",
+      rating: 5,
+    },
+    {
+      name: "Neha Verma",
+      role: "Candidate",
+      text: "Loved the realistic questions and tone guidance. Feels like a live HR interview experience.",
+      rating: 4,
+    },
+    {
+      name: "Sanjay Kumar",
+      role: "Recruiter",
+      text: "I can quickly assess communication and confidence levels. Great tool for early-stage hiring.",
+      rating: 5,
+    },
+  ];
+
   const scrollToFeatures = () => {
-    document.getElementById("features-section")?.scrollIntoView({
-      behavior: "smooth",
-    });
+    document.getElementById("features-section")?.scrollIntoView({ behavior: "smooth" });
   };
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-blue-50 via-white to-indigo-50 text-gray-900 scroll-smooth">
       {/* ====== Hero Section ====== */}
       <section className="relative flex flex-col items-center justify-center text-center py-24 px-6 overflow-hidden">
+        {/* 🔹 Logo */}
+        <div className="mb-6 z-10">
+          <Image
+            src="/logo.png"
+            alt="Career Mock Logo"
+            width={120}
+            height={120}
+            className="mx-auto"
+          />
+        </div>
+
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-[600px] h-[600px] bg-indigo-200/30 rounded-full blur-3xl animate-pulse" />
         </div>
@@ -176,7 +227,7 @@ export default function CareerMockLanding() {
             Our Hiring Partners
           </motion.h2>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-8 items-center justify-center">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-8 items-center justify-center mb-16">
             {companies.map((logo, i) => (
               <motion.div
                 key={i}
@@ -193,6 +244,39 @@ export default function CareerMockLanding() {
                   height={130}
                   className="object-contain grayscale hover:grayscale-0 transition duration-300"
                 />
+              </motion.div>
+            ))}
+          </div>
+
+          {/* ====== Reviews Section ====== */}
+          <motion.h2
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true }}
+            className="text-3xl font-bold text-gray-800 mb-12"
+          >
+            What People Say About Us
+          </motion.h2>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
+            {reviews.map((review, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 40 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: i * 0.1 }}
+                viewport={{ once: true }}
+                className="p-6 rounded-xl bg-white border shadow-sm hover:shadow-md text-left"
+              >
+                <div className="flex items-center mb-3">
+                  {[...Array(review.rating)].map((_, idx) => (
+                    <Star key={idx} className="w-5 h-5 text-yellow-400 fill-yellow-400" />
+                  ))}
+                </div>
+                <p className="text-gray-700 mb-3 italic">“{review.text}”</p>
+                <h4 className="font-semibold text-gray-800">{review.name}</h4>
+                <p className="text-sm text-indigo-600">{review.role}</p>
               </motion.div>
             ))}
           </div>
@@ -249,12 +333,23 @@ export default function CareerMockLanding() {
       </section>
 
       {/* ====== Footer ====== */}
+
       <footer className="py-10 bg-white border-t text-center text-gray-600 text-sm relative">
         <p>
           © {new Date().getFullYear()}{" "}
           <span className="font-semibold text-indigo-600">Career Mock</span> — AI Interview & Career Growth Platform.
           <br /> All rights reserved.
         </p>
+
+        {/* 🔹 Privacy Policy Button */}
+        <div className="mt-4">
+          <button
+            onClick={() => setIsPrivacyOpen(true)}
+            className="text-indigo-600 hover:text-indigo-800 text-sm underline"
+          >
+            Privacy Policy
+          </button>
+        </div>
 
         {/* 🔹 Small Login as Admin button */}
         <div className="absolute bottom-4 right-4">
@@ -265,6 +360,98 @@ export default function CareerMockLanding() {
             Login as Admin
           </Button>
         </div>
+
+        {/* ===== Privacy Policy Modal ===== */}
+        <Dialog open={isPrivacyOpen} onClose={() => setIsPrivacyOpen(false)} className="relative z-50">
+          <div className="fixed inset-0 bg-black/40" aria-hidden="true" />
+          <div className="fixed inset-0 flex items-center justify-center p-4">
+            <Dialog.Panel className="bg-white max-w-3xl mx-auto rounded-lg shadow-lg p-8 overflow-y-auto max-h-[80vh] text-left">
+              <Dialog.Title className="text-2xl font-semibold text-indigo-600 mb-4">
+                Privacy Policy
+              </Dialog.Title>
+
+              <div className="space-y-4 text-gray-700 text-sm leading-relaxed">
+                <p>
+                  At <strong>Career Mock</strong>, your privacy and data security are our highest priority.
+                  This policy describes how we collect, use, and protect your information while you use our
+                  platform and integrated services.
+                </p>
+
+                <h3 className="font-semibold text-gray-900">1. Data Storage and Authentication</h3>
+                <p>
+                  We use <strong>Supabase</strong> for secure authentication, database management, and file storage.
+                  All user information — including email, name, and interview data — is stored in Supabase
+                  using industry-grade encryption. Only authorized users can access or modify their personal data.
+                </p>
+
+                <h3 className="font-semibold text-gray-900">2. AI Services</h3>
+                <p>
+                  Our AI interview feedback is powered by <strong>Groq’s Llama-3.1-8B-Instant</strong> model.
+                  Your interview answers may be processed by this model temporarily to generate analytical feedback,
+                  but no personal information is stored or reused by the AI. We ensure compliance with data-processing
+                  and confidentiality standards.
+                </p>
+
+                <h3 className="font-semibold text-gray-900">3. Payment Processing</h3>
+                <p>
+                  We integrate with <strong>Razorpay</strong> for handling all payments securely.
+                  We do not store or access your card details. Razorpay independently encrypts
+                  and processes payment data according to PCI-DSS standards.
+                  By using our payment services, you also agree to <a href="https://razorpay.com/terms/" target="_blank" className="text-indigo-600 underline">Razorpay’s Terms & Conditions</a>.
+                </p>
+
+                <h3 className="font-semibold text-gray-900">4. Data Usage and Sharing</h3>
+                <p>
+                  We collect limited user data to enhance your interview experience and performance analytics.
+                  None of your personal information is ever sold or shared with third parties for marketing.
+                  Data may be used internally to improve platform reliability and AI accuracy.
+                </p>
+
+                <h3 className="font-semibold text-gray-900">5. Third-Party APIs</h3>
+                <p>
+                  We may use additional third-party APIs such as <strong>Vapi AI</strong> to deliver real-time audio/video
+                  mock interviews. These services are bound by their own privacy agreements, but we only
+                  send minimal necessary data (such as session tokens and voice data) to ensure functionality.
+                </p>
+
+                <h3 className="font-semibold text-gray-900">6. Anti-Spam and Communication Policy</h3>
+                <p>
+                  We respect your inbox. <strong>Career Mock never sends spam or promotional emails</strong> without your explicit consent.
+                  You may receive emails only for account verification, password resets, interview feedback,
+                  or important service updates. You can unsubscribe anytime.
+                </p>
+
+                <h3 className="font-semibold text-gray-900">7. Cookies and Tracking</h3>
+                <p>
+                  We use minimal cookies to maintain user sessions and improve website experience.
+                  No advertising or third-party tracking cookies are used.
+                </p>
+
+                <h3 className="font-semibold text-gray-900">8. User Rights</h3>
+                <p>
+                  You have the right to request access, modification, or deletion of your personal data.
+                  Contact our support if you wish to delete your account and associated information.
+                </p>
+
+                <h3 className="font-semibold text-gray-900">9. Policy Updates</h3>
+                <p>
+                  This Privacy Policy may be updated periodically to reflect new features or compliance requirements.
+                  Updates will be posted on this page with the revised effective date.
+                </p>
+
+                <p className="mt-6 text-gray-600">
+                  Last updated: <strong>{new Date().toLocaleDateString()}</strong>
+                </p>
+              </div>
+
+              <div className="mt-6 text-right">
+                <Button onClick={() => setIsPrivacyOpen(false)} className="bg-indigo-600 text-white hover:bg-indigo-700">
+                  Close
+                </Button>
+              </div>
+            </Dialog.Panel>
+          </div>
+        </Dialog>
       </footer>
     </main>
   );
