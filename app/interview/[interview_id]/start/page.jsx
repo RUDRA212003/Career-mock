@@ -10,6 +10,8 @@ import AlertConfirmation from "./_components/AlertConfirmation";
 import axios from "axios";
 import { supabase } from "@/services/supabaseClient";
 import { toast } from "sonner";
+// added missing Next.js router/hooks
+import { useParams, useRouter } from "next/navigation";
 
 function formatTime(date = new Date()) {
   return new Date(date).toLocaleString();
@@ -473,7 +475,7 @@ Questions: ${JSON.stringify(questionList).slice(0, 2000)}
                   onClick={() => toast("Open candidate profile (implement)")}
                   className="text-sm text-indigo-600 hover:underline inline-flex items-center gap-2"
                 >
-                  < size={14} /> View profile
+                  <MessageCircle size={14} /> View profile
                 </button>
               </div>
             </div>
