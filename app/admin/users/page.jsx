@@ -146,6 +146,18 @@ function UserManagement() {
     }
   };
 
+  // ✅ New: Update credits (increase or decrease)
+  const updateCredits = async (id, newCredits) => {
+    try {
+      const { error } = await supabase.from('users').update({ credits: newCredits }).eq('id', id);
+      if (error) throw error;
+      setUsers(prev => prev.map(u => u.id === id ? { ...u, credits: newCredits } : u));
+      toast.success('Credits updated successfully');
+    } catch {
+      toast.error('Failed to update credits');
+    }
+  };
+
   const handleSendMail = (email, username, credits) => {
     const subject = encodeURIComponent('Greetings from Career Mock!');
     const body = encodeURIComponent(
@@ -280,9 +292,28 @@ function UserManagement() {
                       <p className="text-xs text-gray-400">
                         Joined {moment(u.created_at).format('MMM DD, YYYY')}
                       </p>
-                      <p className="text-xs text-blue-600 font-semibold">
-                        Credits: {u.credits ?? 0}
-                      </p>
+
+                      {/* ✅ Credit Control Section */}
+                      <div className="flex items-center gap-2 text-xs text-blue-600 font-semibold mt-1">
+                        Credits:
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="px-2 h-6 text-sm"
+                          onClick={() => updateCredits(u.id, Math.max((u.credits ?? 0) - 1, 0))}
+                        >
+                          -
+                        </Button>
+                        <span>{u.credits ?? 0}</span>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="px-2 h-6 text-sm"
+                          onClick={() => updateCredits(u.id, (u.credits ?? 0) + 1)}
+                        >
+                          +
+                        </Button>
+                      </div>
                     </div>
                   </div>
 
