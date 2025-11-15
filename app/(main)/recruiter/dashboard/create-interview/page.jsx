@@ -12,7 +12,7 @@ import { useUser } from '@/app/provider';
 
 function CreateInterview() {
   const router = useRouter();
-  const [step, setStep] = useState(3);
+  const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({});
   const [interviewId, setInterviewId] = useState();
   const { user } = useUser();
