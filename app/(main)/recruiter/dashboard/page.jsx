@@ -16,7 +16,7 @@ function Dashboard() {
       <CreateOptions />
       <LatestInterviewsList />
     </div>
-  );
+  );  
 }
 
 export default Dashboard;

@@ -21,12 +21,29 @@ function LatestInterviewsList() {
   const GetInterviewList = async () => {
     const { data: Interviews, error } = await supabase
       .from("interviews")
-      .select("*, interview_results(*)")
+      .select(`
+        id,
+        interview_id,
+        userEmail,
+        jobposition,
+        jobdescription,
+        duration,
+        type,
+        questionlist,
+        created_at,
+        interview_results (*)
+      `)
       .eq("userEmail", user?.email)
       .order("id", { ascending: false })
       .limit(6);
 
-    if (error) console.error("Error fetching interviews:", error);
+    if (error) {
+      console.error("Error fetching interviews:", error);
+      toast.error("Failed to load latest interviews");
+    }
+
+    console.log("🔥 Latest Interviews Loaded:", Interviews);
+
     setInterviewList(Interviews || []);
   };
 
@@ -40,7 +57,6 @@ function LatestInterviewsList() {
         Previously Created Interviews
       </h2>
 
-      {/* Empty State */}
       {InterviewList?.length === 0 ? (
         <div className="p-6 sm:p-8 flex flex-col items-center gap-3 text-center text-gray-500 bg-white border rounded-xl shadow-sm">
           <Video className="text-primary h-10 w-10" />
@@ -58,10 +74,10 @@ function LatestInterviewsList() {
         <div
           className="
             grid 
-            grid-cols-1               /* ✅ 1 column on small phones */
-            sm:grid-cols-2            /* ✅ 2 columns on tablets */
-            lg:grid-cols-3            /* ✅ 3 columns on large screens */
-            gap-4 sm:gap-5            /* ✅ Balanced spacing */
+            grid-cols-1
+            sm:grid-cols-2
+            lg:grid-cols-3
+            gap-4 sm:gap-5
           "
         >
           {InterviewList.map((interview, index) => (

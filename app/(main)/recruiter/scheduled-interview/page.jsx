@@ -22,29 +22,34 @@ function ScheduledInterview() {
       setLoading(true);
 
       const { data, error } = await supabase
-  .from("interviews")
-  .select(`
-    id,
-    jobposition,
-    duration,
-    interview_id,
-    userEmail,
-    interview_results:interview_results_interview_id_fkey (
-      email,
-      conversation_transcript,
-      completed_at
-    )
-  `)
-  .eq("userEmail", user?.email)
-  .order("id", { ascending: false });
-
+        .from("interviews")
+        .select(`
+          id,
+          interview_id,
+          userEmail,
+          jobposition,
+          jobdescription,
+          duration,
+          type,
+          questionlist,
+          created_at,
+          interview_results (
+            email,
+            conversation_transcript,
+            completed_at,
+            fullname
+          )
+        `)
+        .eq("userEmail", user?.email)
+        .order("id", { ascending: false });
 
       if (error) {
         console.error("Supabase error:", error);
         return;
       }
 
-      console.log("Fetched data:", data);
+      console.log("🔥 Scheduled Interviews:", data);
+
       setInterviewList(data || []);
     } catch (err) {
       console.error("Error fetching interviews:", err);
@@ -76,8 +81,8 @@ function ScheduledInterview() {
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
           {interviewList.map((interview, index) => (
             <InterviewCard
-              interview={interview}
               key={index}
+              interview={interview}
               viewDetail={true}
             />
           ))}

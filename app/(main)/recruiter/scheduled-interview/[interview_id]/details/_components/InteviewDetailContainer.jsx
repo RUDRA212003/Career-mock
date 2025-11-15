@@ -21,6 +21,7 @@ function InterviewDetailContainer({ interviewDetail }) {
   const [deleting, setDeleting] = useState(false);
   const router = useRouter();
 
+  // Parse questionlist
   const parsedQuestions = (() => {
     const raw = interviewDetail?.questionlist;
 
@@ -34,36 +35,30 @@ function InterviewDetailContainer({ interviewDetail }) {
     }
   })();
 
+  // DELETE interview + results
   const handleDelete = async () => {
     setDeleting(true);
     try {
-      // Delete interview results first (if any)
       const { error: resultsError } = await supabase
-        .from('interview_results')
+        .from("interview_results")
         .delete()
-        .eq('interview_id', interviewDetail.interview_id);
+        .eq("interview_id", interviewDetail.interview_id);
 
-      if (resultsError) {
-        console.error('Error deleting interview results:', resultsError);
-      }
+      if (resultsError) console.error("Error deleting interview results:", resultsError);
 
-      // Delete the interview
       const { error: interviewError } = await supabase
-        .from('Interviews')
+        .from("interviews")
         .delete()
-        .eq('interview_id', interviewDetail.interview_id);
+        .eq("interview_id", interviewDetail.interview_id);
 
-      if (interviewError) {
-        throw interviewError;
-      }
+      if (interviewError) throw interviewError;
 
       toast.success("Interview deleted successfully!");
       setShowDeleteAlert(false);
-      
-      // Redirect to dashboard
-      router.push('/recruiter/dashboard');
+
+      router.push("/recruiter/dashboard");
     } catch (error) {
-      console.error('Error deleting interview:', error);
+      console.error("Error deleting interview:", error);
       toast.error("Failed to delete interview. Please try again.");
     } finally {
       setDeleting(false);
@@ -75,6 +70,7 @@ function InterviewDetailContainer({ interviewDetail }) {
       <div className="p-5 bg-white border rounded-xl shadow-sm mt-5">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-bold">{interviewDetail?.jobposition}</h2>
+
           <Button
             variant="outline"
             size="sm"
@@ -100,7 +96,12 @@ function InterviewDetailContainer({ interviewDetail }) {
             <h2 className="text-sm text-gray-500">Created on</h2>
             <h2 className="font-bold flex text-sm items-center gap-2">
               <Calendar className="h-4 w-4" />
-              {moment(interviewDetail?.created_at).format("MMMM Do YYYY, h:mm a")}
+
+              {interviewDetail?.created_at ? (
+                moment(interviewDetail.created_at).local().format("MMMM Do YYYY, h:mm a")
+              ) : (
+                "N/A"
+              )}
             </h2>
           </div>
 
@@ -109,7 +110,7 @@ function InterviewDetailContainer({ interviewDetail }) {
               <h2 className="text-sm text-gray-500">Type</h2>
               <h2 className="font-bold flex text-sm items-center gap-2">
                 <Clock className="h-4 w-4" />
-                {JSON.parse(interviewDetail?.type)[0]}
+                {JSON.parse(interviewDetail?.type)?.[0] ?? "N/A"}
               </h2>
             </div>
           )}
@@ -118,7 +119,9 @@ function InterviewDetailContainer({ interviewDetail }) {
         {/* Job Description */}
         <div className="mt-5">
           <h2 className="font-bold">Job Description</h2>
-          <p className="text-sm leading-6 whitespace-pre-wrap">{interviewDetail?.jobdescription}</p>
+          <p className="text-sm leading-6 whitespace-pre-wrap">
+            {interviewDetail?.jobdescription}
+          </p>
         </div>
 
         {/* Interview Questions */}
@@ -128,7 +131,9 @@ function InterviewDetailContainer({ interviewDetail }) {
             {parsedQuestions.map((item, index) => (
               <h2 className="text-sm flex items-center gap-2" key={index}>
                 <MessageCircleQuestionIcon className="h-4 w-4 text-primary" />
-                <span>{index + 1}. {item?.Interviewquestion || item?.question}</span>
+                <span>
+                  {index + 1}. {item?.Interviewquestion || item?.question}
+                </span>
               </h2>
             ))}
           </div>
@@ -141,18 +146,18 @@ function InterviewDetailContainer({ interviewDetail }) {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Interview</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete the interview for <strong>{interviewDetail?.jobposition}</strong>? 
-              This action cannot be undone and will permanently remove:
+              Are you sure you want to delete the interview for{" "}
+              <strong>{interviewDetail?.jobposition}</strong>? This action will remove:
               <ul className="list-disc list-inside mt-2 space-y-1">
                 <li>The interview link</li>
-                <li>All candidate responses ({interviewDetail['interview_results']?.length || 0} candidates)</li>
-                <li>All feedback and ratings</li>
+                <li>All candidate responses</li>
+                <li>All feedback & ratings</li>
               </ul>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
-            <AlertDialogAction 
+            <AlertDialogAction
               onClick={handleDelete}
               disabled={deleting}
               className="bg-red-600 hover:bg-red-700 text-white"
