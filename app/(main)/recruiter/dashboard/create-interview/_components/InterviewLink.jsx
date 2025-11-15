@@ -42,20 +42,24 @@ const InterviewLink = ({ interview_id, formData }) => {
     toast.success("Interview link copied!");
   };
 
-  const shareVia = (platform) => {
-    const interviewTitle = formData?.title || "AI Interview";
-    const defaultMessage = `Join my ${interviewTitle} interview: ${url}`;
-    const emailSubject = `Invitation to ${interviewTitle}`;
-    const emailBody = `Dear Candidate,
+  // ⭐ Unified polished message (same as InterviewCard component)
+  const getShareMessage = () => {
+    const jobRole = formData?.title || "the role";
+    return `Hi, hope you're doing great!
 
-I hope this message finds you well. I am pleased to invite you to participate in my ${interviewTitle}. This interview is designed to assess your skills and provide an opportunity to showcase your expertise.
+An interview has been scheduled for the position of ${jobRole}. Please ensure you join using the link below:
 
-You can access the interview using the following link:
 ${url}
 
-Please ensure you complete the interview before the deadline. If you have any questions or require assistance, feel free to reach out.
+Make sure you're well-prepared with the relevant concepts.
 
-Best regards,`;
+Looking forward to your best performance!`;
+  };
+
+  // ⭐ Share handler
+  const shareVia = (platform) => {
+    const message = getShareMessage();
+    const emailSubject = `Invitation for ${formData?.title || "Interview"}`;
 
     let shareUrl = "";
 
@@ -63,21 +67,25 @@ Best regards,`;
       case "email":
         shareUrl = `mailto:?subject=${encodeURIComponent(
           emailSubject
-        )}&body=${encodeURIComponent(emailBody)}`;
+        )}&body=${encodeURIComponent(message)}`;
         window.location.href = shareUrl;
         break;
+
       case "linkedin":
+        // LinkedIn does NOT support custom message text — only URLs
         shareUrl = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(
           url
         )}`;
         window.open(shareUrl, "_blank", "width=600,height=400");
         break;
+
       case "whatsapp":
         shareUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(
-          defaultMessage
+          message
         )}`;
         window.open(shareUrl, "_blank");
         break;
+
       default:
         break;
     }
@@ -85,17 +93,17 @@ Best regards,`;
 
   return (
     <div className="flex flex-col items-center justify-center gap-8 sm:gap-10 w-full px-4 sm:px-6 md:px-10 py-6">
-      {/* ✅ Success Header with Rounded Video */}
+
+      {/* Header */}
       <div className="flex flex-col items-center text-center">
         <video
-  src="/check-suc.mp4"
-  autoPlay
-  muted
-  playsInline
-  loop={false}
-  className="w-14 h-14 sm:w-12 sm:h-12 md:w-16 md:h-16 object-cover rounded-xl overflow-hidden"
-/>
-
+          src="/check-suc.mp4"
+          autoPlay
+          muted
+          playsInline
+          loop={false}
+          className="w-14 h-14 sm:w-12 sm:h-12 md:w-16 md:h-16 object-cover rounded-xl overflow-hidden"
+        />
 
         <h2 className="font-bold text-lg sm:text-xl text-gray-800 mt-4">
           Your AI Interview is Ready!
@@ -105,7 +113,7 @@ Best regards,`;
         </p>
       </div>
 
-      {/* ✅ Interview Info Card */}
+      {/* Link Card */}
       <div className="bg-white shadow-lg rounded-3xl p-6 sm:p-8 w-full max-w-2xl">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <h2 className="font-semibold text-base sm:text-lg text-gray-800">
@@ -116,7 +124,7 @@ Best regards,`;
           </span>
         </div>
 
-        {/* Link + Copy Button */}
+        {/* URL */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mt-5">
           <Input
             value={getInterviewURL()}
@@ -133,7 +141,7 @@ Best regards,`;
 
         <hr className="my-6 border-gray-200" />
 
-        {/* Interview Details */}
+        {/* Details */}
         <div className="flex flex-col sm:flex-row sm:flex-wrap sm:justify-start gap-3 sm:gap-6 text-sm text-gray-600">
           <div className="flex items-center gap-2 bg-blue-50 px-3 py-2 rounded-full">
             <Clock className="w-4 h-4 text-blue-600" />
@@ -150,7 +158,7 @@ Best regards,`;
         </div>
       </div>
 
-      {/* ✅ Share Section */}
+      {/* Share Section */}
       <div className="w-full bg-white shadow-lg p-6 sm:p-8 rounded-3xl max-w-2xl">
         <h2 className="font-semibold text-base sm:text-lg mb-4 text-gray-800">
           Share via
@@ -180,7 +188,7 @@ Best regards,`;
         </div>
       </div>
 
-      {/* ✅ Action Buttons */}
+      {/* Action Buttons */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5 w-full max-w-2xl">
         <Button
           variant="outline"

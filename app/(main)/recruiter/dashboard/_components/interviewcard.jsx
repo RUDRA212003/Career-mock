@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { ArrowRight, Copy, Send, Trash2 } from "lucide-react";
+import { ArrowRight, Copy, Send, Trash2, MessageCircle } from "lucide-react";
 import moment from "moment";
 import React, { useState, useRef } from "react";
 import { toast } from "sonner";
@@ -24,12 +24,25 @@ function InterviewCard({ interview, viewDetail = false, onDelete }) {
   const [deleting, setDeleting] = useState(false);
   const [showPopup, setShowPopup] = useState(false);
 
-  // ✅ useRef without NodeJS type
   const popupTimer = useRef(null);
 
   const getInterviewUrl = () => {
     const baseUrl = process.env.NEXT_PUBLIC_HOST_URL?.replace(/\/$/, "");
     return `${baseUrl}/${interview?.interview_id}`;
+  };
+
+  // ⭐ Shared message used for Email + WhatsApp
+  const getShareMessage = () => {
+    const url = getInterviewUrl();
+    return `Hi, hope you're doing great!
+
+An interview has been scheduled for the position of ${interview?.jobposition}. Please ensure you join using the link below:
+
+${url}
+
+Make sure you're well-prepared with the relevant concepts.
+
+Looking forward to your best performance!`;
   };
 
   const copyLink = async () => {
@@ -43,10 +56,20 @@ function InterviewCard({ interview, viewDetail = false, onDelete }) {
     }
   };
 
+  // ⭐ Email share
   const onSend = () => {
-    const interviewUrl = getInterviewUrl();
-    window.location.href = `mailto:?subject=AI Recruiter Interview Link&body=Hi, I would like to schedule an interview with you. Please find the link below:\n\n${interviewUrl}`;
-    toast.success("Email opened with pre-filled link!");
+    const subject = encodeURIComponent("AI Recruiter Interview Link");
+    const message = encodeURIComponent(getShareMessage());
+
+    window.location.href = `mailto:?subject=${subject}&body=${message}`;
+    toast.success("Email opened with pre-filled message!");
+  };
+
+  // ⭐ WhatsApp share
+  const sendWhatsApp = () => {
+    const encodedMsg = encodeURIComponent(getShareMessage());
+    window.open(`https://wa.me/?text=${encodedMsg}`, "_blank");
+    toast.success("WhatsApp opened with pre-filled message!");
   };
 
   const handleDelete = async () => {
@@ -78,7 +101,6 @@ function InterviewCard({ interview, viewDetail = false, onDelete }) {
     }
   };
 
-  // 🕒 Hover delay for popup
   const handleMouseEnter = () => {
     popupTimer.current = setTimeout(() => setShowPopup(true), 300);
   };
@@ -130,8 +152,10 @@ function InterviewCard({ interview, viewDetail = false, onDelete }) {
           </div>
         </div>
 
+        {/* --- Buttons Section --- */}
         {!viewDetail ? (
           <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 mt-4 sm:mt-6">
+            {/* Copy Link */}
             <Button
               variant="outline"
               className="flex-1 flex items-center justify-center gap-2 py-2 text-sm sm:text-base dark:hover:bg-gray-700 dark:border-gray-600 dark:text-gray-200"
@@ -140,12 +164,23 @@ function InterviewCard({ interview, viewDetail = false, onDelete }) {
               <Copy size={16} className="text-gray-600 dark:text-gray-300" />
               Copy Link
             </Button>
+
+            {/* Email */}
             <Button
               className="flex-1 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 py-2 text-sm sm:text-base"
               onClick={onSend}
             >
               <Send size={16} className="text-white" />
-              Send
+              Email
+            </Button>
+
+            {/* WhatsApp */}
+            <Button
+              className="flex-1 flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800 py-2 text-sm sm:text-base"
+              onClick={sendWhatsApp}
+            >
+              <MessageCircle size={16} className="text-white" />
+              WhatsApp
             </Button>
           </div>
         ) : (
@@ -166,7 +201,7 @@ function InterviewCard({ interview, viewDetail = false, onDelete }) {
         )}
       </div>
 
-      {/* --- Rectangular Popup Template --- */}
+      {/* --- Popup --- */}
       <AnimatePresence>
         {showPopup && (
           <motion.div
@@ -174,7 +209,7 @@ function InterviewCard({ interview, viewDetail = false, onDelete }) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 10 }}
             transition={{ duration: 0.25 }}
-            className="absolute top-full left-1/2 -translate-x-1/2 mt-3 z-50 w-[420px] bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden"
+            className="absolute top-full left-50 -translate-x-1/2 mt-3 z-50 w-[420px] bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden"
           >
             <div className="p-5 space-y-4">
               <div>
@@ -203,7 +238,7 @@ function InterviewCard({ interview, viewDetail = false, onDelete }) {
         )}
       </AnimatePresence>
 
-      {/* --- Delete Confirmation Dialog --- */}
+      {/* --- Delete Confirmation --- */}
       <AlertDialog open={showDeleteAlert} onOpenChange={setShowDeleteAlert}>
         <AlertDialogContent>
           <AlertDialogHeader>
