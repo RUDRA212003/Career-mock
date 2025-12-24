@@ -1,5 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: 'standalone',
+
   images: {
     remotePatterns: [
       {
@@ -15,9 +17,9 @@ const nextConfig = {
         hostname: 'cdn-icons-png.flaticon.com',
       },
       {
-         protocol: 'https',
-        hostname: 'listgkwerjnsuqguvfcw.supabase.co', // ✅ correct Supabase project domain
-        pathname: '/storage/v1/object/public/**',     // ✅ allows any file under public buckets
+        protocol: 'https',
+        hostname: 'grtduudyzchqzffvcbtz.supabase.co',
+        pathname: '/storage/v1/object/public/**',
       },
     ],
   },
