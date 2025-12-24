@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://career-mock.vercel.app/sitemap.xml
