@@ -10,7 +10,7 @@ import {
   CardDescription,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Users, ArrowLeft, XCircle } from 'lucide-react';
+import { Users, ArrowLeft, XCircle, Calendar, Mail, FileText, ChevronRight, Loader2 } from 'lucide-react';
 import moment from 'moment';
 
 export default function InterviewDetailPage() {
@@ -27,16 +27,11 @@ export default function InterviewDetailPage() {
 
   const fetchDetails = async () => {
     setLoading(true);
-
-    // 🟢 Fetch interview
     const { data: interviewData, error: interviewError } = await supabase
       .from('interviews')
       .select('*')
       .eq('interview_id', interviewId)
       .single();
-
-    console.log('🧩 Interview Data:', interviewData);
-    console.log('⚠️ Interview Error:', interviewError);
 
     if (interviewError || !interviewData) {
       setInterview(null);
@@ -44,14 +39,10 @@ export default function InterviewDetailPage() {
       return;
     }
 
-    // 🟢 Fetch results
     const { data: resultsData, error: resultsError } = await supabase
       .from('interview_results')
       .select('*')
       .eq('interview_id', interviewId);
-
-    console.log('🧠 Results Data:', resultsData);
-    console.log('⚠️ Results Error:', resultsError);
 
     setInterview(interviewData);
     setResults(resultsData || []);
@@ -60,168 +51,175 @@ export default function InterviewDetailPage() {
 
   if (loading) {
     return (
-      <div className="flex h-96 items-center justify-center">
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
+      <div className="flex h-[60vh] flex-col items-center justify-center gap-4">
+        <Loader2 className="animate-spin h-10 w-10 text-[#0071E3]" />
+        <p className="text-[#86868B] font-medium tracking-tight">Loading details...</p>
       </div>
     );
   }
 
   if (!interview) {
     return (
-      <div className="text-center py-16">
-        <XCircle className="w-10 h-10 text-red-500 mx-auto mb-4" />
-        <h2 className="text-xl font-bold mb-2">Interview Not Found</h2>
-        <Button onClick={() => router.back()} variant="outline">
-          <ArrowLeft className="w-4 h-4 mr-2" /> Back
+      <div className="text-center py-24 px-6">
+        <XCircle className="w-16 h-16 text-[#FF3B30] mx-auto mb-6 opacity-80" />
+        <h2 className="text-3xl font-bold tracking-tight mb-4 text-[#1D1D1F]">Interview Not Found</h2>
+        <p className="text-[#86868B] mb-8 max-w-md mx-auto">The session you are looking for might have been removed or the link is incorrect.</p>
+        <Button onClick={() => router.back()} variant="outline" className="rounded-full px-8 h-12 border-[#D2D2D7] font-medium">
+          <ArrowLeft className="w-4 h-4 mr-2" /> Return to Dashboard
         </Button>
       </div>
     );
   }
 
   return (
-    <div className="max-w-3xl mx-auto space-y-8">
-      <Button onClick={() => router.back()} variant="outline" className="mb-4">
-        <ArrowLeft className="w-4 h-4 mr-2" /> Back
-      </Button>
+    <div className="max-w-[1024px] mx-auto p-6 md:p-12 bg-[#F5F5F7] min-h-screen text-[#1D1D1F] font-sans selection:bg-blue-100">
+      {/* Navigation */}
+      <nav className="mb-10">
+        <button 
+          onClick={() => router.back()} 
+          className="flex items-center text-[#0066CC] font-semibold text-lg hover:gap-2 transition-all"
+        >
+          <ArrowLeft className="w-5 h-5 mr-2" /> Back
+        </button>
+      </nav>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Users className="w-5 h-5" />
-            {interview.jobposition || 'Untitled Interview'}
-          </CardTitle>
-          <CardDescription>
-            Created by:{' '}
-            <span className="font-medium">{interview.userEmail}</span>
-            <span className="ml-4 text-gray-500">
-              {moment(interview.created_at).format('MMM DD, YYYY HH:mm')}
-            </span>
-          </CardDescription>
+      {/* Main Header Card */}
+      <Card className="rounded-[28px] border-none shadow-sm bg-white overflow-hidden mb-12">
+        <CardHeader className="p-8 md:p-12 pb-6">
+          <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
+            <div className="space-y-4">
+              <div className="w-16 h-16 rounded-2xl bg-[#F5F5F7] flex items-center justify-center text-[#0071E3]">
+                <Users className="w-8 h-8" />
+              </div>
+              <div>
+                <CardTitle className="text-4xl font-bold tracking-tight mb-2">
+                  {interview.jobposition || 'Untitled Interview'}
+                </CardTitle>
+                <div className="flex flex-wrap items-center gap-4 text-[#86868B] font-medium">
+                  <span className="flex items-center gap-1.5"><Mail className="w-4 h-4" /> {interview.userEmail}</span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#D2D2D7]" />
+                  <span className="flex items-center gap-1.5"><Calendar className="w-4 h-4" /> {moment(interview.created_at).format('MMM DD, YYYY')}</span>
+                </div>
+              </div>
+            </div>
+            <div className="bg-[#F5F5F7] px-6 py-4 rounded-2xl text-center md:text-right">
+              <p className="text-[12px] font-bold text-[#86868B] uppercase tracking-wider mb-1">Participants</p>
+              <p className="text-3xl font-bold tracking-tight">{results.length}</p>
+            </div>
+          </div>
         </CardHeader>
 
-        <CardContent className="space-y-2">
-          <div>
-            <span className="font-semibold">Description:</span>{' '}
-            {interview.jobdescription || 'No description provided.'}
-          </div>
-          <div>
-            <span className="font-semibold">Interview ID:</span>{' '}
-            {interview.interview_id}
-          </div>
-          <div>
-            <span className="font-semibold">Total Candidates:</span>{' '}
-            {results.length}
+        <CardContent className="p-8 md:p-12 pt-0 space-y-8">
+          <div className="h-[1px] bg-[#D2D2D7]/50 w-full" />
+          <div className="grid md:grid-cols-2 gap-12">
+            <div className="space-y-3">
+              <h4 className="text-[13px] font-bold text-[#86868B] uppercase tracking-widest flex items-center gap-2">
+                <FileText className="w-4 h-4" /> Job Description
+              </h4>
+              <p className="text-lg leading-relaxed text-[#424245]">
+                {interview.jobdescription || 'No description provided.'}
+              </p>
+            </div>
+            <div className="space-y-3">
+              <h4 className="text-[13px] font-bold text-[#86868B] uppercase tracking-widest flex items-center gap-2">
+                Internal Reference
+              </h4>
+              <code className="block bg-[#F5F5F7] p-4 rounded-xl text-sm font-mono text-[#1D1D1F]">
+                {interview.interview_id}
+              </code>
+            </div>
           </div>
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Candidate Results</CardTitle>
-          <CardDescription>
-            All candidates who participated in this interview
-          </CardDescription>
-        </CardHeader>
+      {/* Candidate Results Section */}
+      <div className="space-y-6">
+        <h3 className="text-2xl font-bold tracking-tight px-2">Candidate Results</h3>
+        
+        {results.length === 0 ? (
+          <div className="bg-white rounded-[28px] p-16 text-center shadow-sm">
+            <p className="text-[#86868B] font-medium text-lg">No candidates have participated yet.</p>
+          </div>
+        ) : (
+          <div className="grid gap-6">
+            {results.map((result) => {
+              let feedback = null;
+              try {
+                feedback = result.conversation_transcript?.feedback
+                  ? result.conversation_transcript.feedback
+                  : JSON.parse(result.conversation_transcript)?.feedback;
+              } catch {
+                feedback = null;
+              }
 
-        <CardContent>
-          {results.length === 0 ? (
-            <div className="text-gray-500">No candidates have participated yet.</div>
-          ) : (
-            <div className="divide-y">
-              {results.map((result) => {
-                let feedback = null;
-                try {
-                  feedback = result.conversation_transcript?.feedback
-                    ? result.conversation_transcript.feedback
-                    : JSON.parse(result.conversation_transcript)?.feedback;
-                } catch {
-                  feedback = null;
-                }
+              const ratings = feedback?.rating || {};
+              const summary = feedback?.summary || '';
+              const recommendation = feedback?.Recommendation || '';
+              const recommendationMsg = feedback?.RecommendationMessage || '';
 
-                const ratings = feedback?.rating || {};
-                const summary = feedback?.summary || '';
-                const recommendation = feedback?.Recommendation || '';
-                const recommendationMsg =
-                  feedback?.RecommendationMessage || '';
+              const ratingValues = Object.values(ratings).filter((val) => typeof val === 'number');
+              const avgScore = ratingValues.length
+                ? (ratingValues.reduce((a, b) => a + b, 0) / ratingValues.length).toFixed(1)
+                : 'N/A';
 
-                const ratingValues = Object.values(ratings).filter(
-                  (val) => typeof val === 'number'
-                );
-                const avgScore = ratingValues.length
-                  ? (
-                      ratingValues.reduce((a, b) => a + b, 0) /
-                      ratingValues.length
-                    ).toFixed(2)
-                  : 'N/A';
-
-                return (
-                  <div
-                    key={result.id}
-                    className="bg-white rounded-lg shadow-md p-6 mb-6"
-                  >
-                    <div className="flex justify-between items-start mb-4">
-                      <div>
-                        <h3 className="text-lg font-semibold text-gray-800">
-                          {result.fullname || 'Unknown Candidate'}
-                        </h3>
-                        <div className="text-xs text-gray-500">
-                          {result.email || 'No email'}
+              return (
+                <Card key={result.id} className="rounded-[28px] border-none shadow-sm bg-white overflow-hidden transition-all hover:shadow-md">
+                  <div className="p-8 md:p-10">
+                    <div className="flex flex-col md:flex-row justify-between items-start gap-6 mb-8">
+                      <div className="flex items-center gap-4">
+                        <div className="w-14 h-14 rounded-full bg-[#E5E5EA] flex items-center justify-center text-[#1D1D1F] font-bold text-xl">
+                          {result.fullname?.charAt(0) || 'U'}
+                        </div>
+                        <div>
+                          <h3 className="text-2xl font-bold text-[#1D1D1F]">
+                            {result.fullname || 'Unknown Candidate'}
+                          </h3>
+                          <p className="text-[#86868B] font-medium">{result.email || 'No email provided'}</p>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <div className="text-2xl font-bold text-blue-600">
-                          {avgScore}
-                        </div>
-                        <div className="text-xs text-gray-500">Average Score</div>
+                      <div className="flex flex-col items-center md:items-end">
+                        <span className="text-[64px] font-bold tracking-tighter leading-none text-[#0071E3]">
+                          {avgScore}<span className="text-2xl text-[#86868B] tracking-normal">%</span>
+                        </span>
+                        <span className="text-[12px] font-bold text-[#86868B] uppercase tracking-wider mt-1">Match Score</span>
                       </div>
                     </div>
 
                     {summary && (
-                      <div className="mb-4">
-                        <h4 className="font-medium text-gray-800 mb-2">
-                          Summary:
-                        </h4>
-                        <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-lg">
+                      <div className="mb-8 p-6 bg-[#F5F5F7] rounded-2xl">
+                        <h4 className="text-[13px] font-bold text-[#86868B] uppercase tracking-widest mb-3">AI Analysis Summary</h4>
+                        <p className="text-[16px] leading-relaxed text-[#424245]">
                           {summary}
                         </p>
                       </div>
                     )}
 
-                    {recommendation && (
-                      <div className="mb-4">
-                        <h4 className="font-medium text-gray-800 mb-2">
-                          Recommendation:
-                        </h4>
-                        <div
-                          className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
+                    <div className="flex flex-col md:flex-row justify-between items-center gap-6 pt-6 border-t border-[#D2D2D7]/50">
+                      {recommendation && (
+                        <div className="flex flex-wrap items-center gap-3">
+                          <span className={`px-5 py-2 rounded-full text-[13px] font-bold tracking-tight ${
                             recommendation.toLowerCase().includes('recommended')
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-red-100 text-red-800'
-                          }`}
-                        >
-                          {recommendation}
+                              ? 'bg-[#34C759]/10 text-[#34C759]'
+                              : 'bg-[#FF3B30]/10 text-[#FF3B30]'
+                          }`}>
+                            {recommendation}
+                          </span>
+                          {recommendationMsg && (
+                            <span className="text-[#86868B] text-sm font-medium">{recommendationMsg}</span>
+                          )}
                         </div>
-                        {recommendationMsg && (
-                          <p className="text-sm text-gray-600 mt-1">
-                            {recommendationMsg}
-                          </p>
-                        )}
+                      )}
+                      <div className="text-[12px] font-medium text-[#A1A1A6] italic uppercase tracking-wider">
+                        Session: {result.completed_at ? moment(result.completed_at).format('MMM DD, YYYY [at] HH:mm') : 'Draft'}
                       </div>
-                    )}
-
-                    <div className="text-xs text-gray-400">
-                      Completed:{' '}
-                      {result.completed_at
-                        ? new Date(result.completed_at).toLocaleString()
-                        : 'Not completed'}
                     </div>
                   </div>
-                );
-              })}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                </Card>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

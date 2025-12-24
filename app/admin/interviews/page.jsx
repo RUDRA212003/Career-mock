@@ -11,6 +11,8 @@ import {
   CheckCircle,
   Trash2,
   ArrowLeft,
+  ChevronRight,
+  Loader2,
 } from 'lucide-react';
 import { supabase } from '@/services/supabaseClient';
 import { Button } from '@/components/ui/button';
@@ -115,7 +117,7 @@ function InterviewAnalytics() {
         aValue = new Date(aValue);
         bValue = new Date(bValue);
       }
-      return sortOrder === 'asc' ? aValue - bValue : bValue - aValue;
+      return sortOrder === 'asc' ? (aValue > bValue ? 1 : -1) : (aValue < bValue ? 1 : -1);
     });
 
     setFilteredInterviews(filtered);
@@ -146,12 +148,12 @@ function InterviewAnalytics() {
     toast.success('Exported interviews successfully ✅');
   };
 
-  const getStatusColor = (i) =>
+  const getStatusStyle = (i) =>
     i.completedCount > 0
-      ? 'text-green-600 bg-green-50 border border-green-200'
+      ? 'bg-[#34C759]/10 text-[#34C759]'
       : i.candidateCount > 0
-      ? 'text-blue-600 bg-blue-50 border border-blue-200'
-      : 'text-gray-600 bg-gray-50 border border-gray-200';
+      ? 'bg-[#0071E3]/10 text-[#0071E3]'
+      : 'bg-[#86868B]/10 text-[#86868B]';
 
   const getStatusText = (i) =>
     i.completedCount > 0 ? 'Completed' : i.candidateCount > 0 ? 'In Progress' : 'No Candidates';
@@ -170,185 +172,170 @@ function InterviewAnalytics() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 p-4 sm:p-6 md:p-8">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl shadow-md p-6 text-white mb-8">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold">Interview Analytics</h1>
-            <p className="text-blue-100 mt-1">
-              Monitor interview performance and candidate results
-            </p>
+    <div className="min-h-screen bg-[#F5F5F7] text-[#1D1D1F] font-sans selection:bg-blue-100">
+      {/* Apple-Style Navigation Bar */}
+      <nav className="sticky top-0 z-50 w-full bg-white/80 backdrop-blur-md border-b border-[#D2D2D7]">
+        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <button onClick={() => router.back()} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            <h1 className="text-xl font-semibold tracking-tight">Interview Analytics</h1>
           </div>
-          <Button
-            onClick={exportInterviewsToCSV}
-            className="bg-white/10 text-white hover:bg-white/20 backdrop-blur-md"
+          <Button 
+            onClick={exportInterviewsToCSV} 
+            className="rounded-full bg-[#0071E3] hover:bg-[#0077ED] text-white px-5 h-9 font-medium shadow-sm transition-all active:scale-95"
           >
-            <Download className="w-4 h-4 mr-2" /> Export Data
+            <Download className="w-4 h-4 mr-2" /> Export
           </Button>
         </div>
-      </div>
+      </nav>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        {[
-          { title: 'Total Interviews', value: interviews.length, icon: BarChart3 },
-          {
-            title: 'Candidates',
-            value: interviews.reduce((s, i) => s + i.candidateCount, 0),
-            icon: Users,
-          },
-          {
-            title: 'Completed',
-            value: interviews.reduce((s, i) => s + i.completedCount, 0),
-            icon: CheckCircle,
-          },
-          {
-            title: 'Avg Score',
-            value:
-              interviews.length > 0
-                ? Math.round(
-                    (interviews.reduce((s, i) => s + i.avgScore, 0) / interviews.length) * 100
-                  ) / 100
-                : 0,
-            icon: Clock,
-          },
-        ].map((stat, i) => (
-          <Card key={i} className="hover:shadow-lg transition-all duration-300 border border-gray-200">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-gray-600">{stat.title}</CardTitle>
-              <stat.icon className="w-4 h-4 text-blue-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-gray-900">{stat.value}</div>
-              <p className="text-xs text-gray-500 mt-1">Total {stat.title.toLowerCase()}</p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      <main className="max-w-7xl mx-auto p-6 md:p-10">
+        {/* Horizontal Stats Strip */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+          {[
+            { title: 'Total Sessions', value: interviews.length, icon: BarChart3, color: 'text-[#0071E3]' },
+            { title: 'Candidates', value: interviews.reduce((s, i) => s + i.candidateCount, 0), icon: Users, color: 'text-[#5E5CE6]' },
+            { title: 'Completed', value: interviews.reduce((s, i) => s + i.completedCount, 0), icon: CheckCircle, color: 'text-[#34C759]' },
+            { title: 'Avg Score', value: interviews.length > 0 ? (interviews.reduce((s, i) => s + i.avgScore, 0) / interviews.length).toFixed(1) : 0, icon: Clock, color: 'text-[#FF9500]' },
+          ].map((stat, i) => (
+            <div key={i} className="bg-white rounded-2xl p-6 shadow-sm border border-[#D2D2D7]/50">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-[12px] font-semibold text-[#86868B] uppercase tracking-wider">{stat.title}</p>
+                <stat.icon className={`w-4 h-4 ${stat.color}`} />
+              </div>
+              <p className="text-3xl font-bold tracking-tighter">{stat.value}</p>
+            </div>
+          ))}
+        </div>
 
-      {/* Filters */}
-      <Card className="mb-6 shadow-sm border-gray-200">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg font-semibold text-gray-800">
-            <Search className="w-5 h-5 text-blue-600" />
-            Search & Filter
-          </CardTitle>
-          <CardDescription>Find specific interviews or sort results</CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col sm:flex-row sm:items-center gap-3">
-          <div className="relative w-full sm:w-1/2">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+        {/* Search & Filter Bar */}
+        <div className="flex flex-col md:flex-row gap-4 mb-8">
+          <div className="relative flex-grow">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#86868B] w-4 h-4" />
             <Input
               placeholder="Search by title or email..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
+              className="pl-11 h-12 bg-white rounded-2xl border-[#D2D2D7] focus:ring-[#0071E3] focus:border-[#0071E3] transition-all shadow-sm"
             />
           </div>
-          <div className="flex flex-wrap gap-2 justify-end w-full sm:w-auto">
+          <div className="flex gap-2">
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="px-3 py-2 border rounded-md text-sm"
+              className="h-12 px-4 rounded-2xl border border-[#D2D2D7] bg-white text-sm font-medium focus:ring-2 ring-blue-50 outline-none cursor-pointer"
             >
-              <option value="created_at">Created Date</option>
-              <option value="title">Title</option>
+              <option value="created_at">Date Created</option>
+              <option value="jobposition">Job Title</option>
               <option value="candidateCount">Candidates</option>
-              <option value="avgScore">Score</option>
+              <option value="avgScore">Average Score</option>
             </select>
             <Button
               variant="outline"
               onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-              className="text-sm"
+              className="h-12 px-5 rounded-2xl border-[#D2D2D7] bg-white font-medium hover:bg-gray-50 shadow-sm"
             >
-              <Filter className="w-4 h-4 mr-1" />
-              {sortOrder === 'asc' ? 'Asc' : 'Desc'}
+              <Filter className="w-4 h-4 mr-2" />
+              {sortOrder === 'asc' ? 'Ascending' : 'Descending'}
             </Button>
           </div>
-        </CardContent>
-      </Card>
+        </div>
 
-      {/* List */}
-      <Card className="shadow-sm border-gray-200">
-        <CardHeader>
-          <Button onClick={() => router.back()} variant="outline" size="sm" className="mb-3">
-            <ArrowLeft className="w-4 h-4 mr-2" /> Return
-          </Button>
-          <CardTitle className="text-lg font-semibold text-gray-800">
-            All Interviews ({filteredInterviews.length})
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <p className="text-center text-gray-500 py-6">Loading interviews...</p>
-          ) : filteredInterviews.length === 0 ? (
-            <p className="text-center text-gray-500 py-6">No interviews found.</p>
-          ) : (
-            <div className="space-y-3">
-              {filteredInterviews.map((i) => (
-                <div
-                  key={i.interview_id}
-                  className="relative flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 border rounded-lg hover:shadow-md hover:bg-blue-50 transition"
-                >
-                  <Link
-                    href={`/admin/interviews/${i.interview_id}`}
-                    className="flex items-start sm:items-center gap-3"
-                  >
-                    <div className="w-12 h-12 bg-blue-100 flex items-center justify-center rounded-lg">
-                      <BarChart3 className="w-6 h-6 text-blue-600" />
-                    </div>
-                    <div>
-                      <h3 className="font-medium text-gray-900 text-sm sm:text-base">
-                        {i.jobposition || 'Untitled'}
-                      </h3>
-                      <p className="text-xs text-gray-500">
-                        {moment(i.created_at).format('MMM DD, YYYY')} ·{' '}
-                        {i.userEmail || 'Unknown'}
-                      </p>
-                    </div>
-                  </Link>
-                  <div className="flex flex-wrap gap-3 sm:justify-end mt-3 sm:mt-0">
-                    <span
-                      className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(i)}`}
+        {/* Interview List Pane */}
+        <Card className="rounded-[28px] border-none shadow-sm overflow-hidden bg-white/70 backdrop-blur-sm">
+          <CardContent className="p-0">
+            {loading ? (
+              <div className="flex flex-col items-center justify-center py-20 gap-3">
+                <Loader2 className="w-8 h-8 animate-spin text-[#0071E3]" />
+                <p className="text-[#86868B] font-medium tracking-tight">Updating analytics...</p>
+              </div>
+            ) : filteredInterviews.length === 0 ? (
+              <div className="text-center py-20 text-[#86868B] font-medium">No analytics found.</div>
+            ) : (
+              <div className="divide-y divide-[#D2D2D7]/50">
+                {filteredInterviews.map((i) => (
+                  <div key={i.interview_id} className="p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-4 hover:bg-white/40 transition-colors">
+                    <Link 
+                      href={`/admin/interviews/${i.interview_id}`}
+                      className="flex items-center gap-5 flex-grow group"
                     >
-                      {getStatusText(i)}
-                    </span>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => {
-                        setDeletingId(i.interview_id);
-                        setShowDeleteAlert(true);
-                      }}
-                      className="text-xs text-red-600 border-red-200 hover:bg-red-50"
-                    >
-                      <Trash2 className="w-4 h-4 mr-1" /> Delete
-                    </Button>
+                      <div className="w-14 h-14 rounded-2xl bg-[#E5E5EA] flex items-center justify-center text-[#0071E3]">
+                        <BarChart3 className="w-7 h-7" />
+                      </div>
+                      <div className="space-y-0.5">
+                        <h3 className="font-bold text-lg text-[#1D1D1F] group-hover:text-[#0071E3] transition-colors">
+                          {i.jobposition || 'Untitled Session'}
+                        </h3>
+                        <div className="flex items-center gap-2 text-sm text-[#86868B] font-medium">
+                          <span>{i.userEmail || 'Unknown'}</span>
+                          <span className="w-1 h-1 rounded-full bg-[#D2D2D7]" />
+                          <span>{moment(i.created_at).format('MMM DD, YYYY')}</span>
+                        </div>
+                      </div>
+                    </Link>
+
+                    <div className="flex flex-wrap items-center gap-4 lg:gap-8">
+                      <div className="flex flex-col items-center lg:items-end">
+                        <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Avg Score</span>
+                        <span className="text-lg font-bold">{i.avgScore || 0}%</span>
+                      </div>
+                      
+                      <div className="flex flex-col items-center lg:items-end">
+                        <span className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Candidates</span>
+                        <span className="text-lg font-bold">{i.candidateCount}</span>
+                      </div>
+
+                      <span className={`px-4 py-1.5 rounded-full text-[12px] font-bold ${getStatusStyle(i)}`}>
+                        {getStatusText(i)}
+                      </span>
+                      
+                      <div className="h-6 w-[1px] bg-[#D2D2D7] hidden lg:block" />
+
+                      <div className="flex items-center gap-2">
+                        <Link href={`/admin/interviews/${i.interview_id}`}>
+                          <Button variant="ghost" size="icon" className="rounded-full text-[#0071E3]">
+                            <ChevronRight className="w-5 h-5" />
+                          </Button>
+                        </Link>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="rounded-full text-[#FF3B30] hover:bg-[#FF3B30]/10"
+                          onClick={() => {
+                            setDeletingId(i.interview_id);
+                            setShowDeleteAlert(true);
+                          }}
+                        >
+                          <Trash2 className="w-5 h-5" />
+                        </Button>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </main>
 
       {/* Delete Confirmation */}
       <AlertDialog open={showDeleteAlert} onOpenChange={setShowDeleteAlert}>
-        <AlertDialogContent>
+        <AlertDialogContent className="rounded-[32px] border-none p-8">
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Interview</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete this interview? This action cannot be undone.
+            <AlertDialogTitle className="text-2xl font-bold tracking-tight text-center">Delete Interview?</AlertDialogTitle>
+            <AlertDialogDescription className="text-center text-[#86868B] text-md pt-2">
+              This will permanently remove this interview session and all candidate results. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogFooter className="flex-col sm:flex-row gap-3 mt-6">
+            <AlertDialogCancel className="rounded-full h-12 font-semibold border-[#D2D2D7] flex-grow">Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmDeleteInterview}
-              className="bg-red-600 hover:bg-red-700"
+              className="rounded-full h-12 font-semibold bg-[#FF3B30] hover:bg-[#D70015] text-white flex-grow"
             >
-              Delete
+              Delete Session
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

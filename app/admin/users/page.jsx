@@ -1,7 +1,16 @@
 'use client';
 import React, { useEffect, useState } from 'react';
 import {
-  Users, Search, Filter, Download, Mail, Ban, ArrowLeft
+  Users,
+  Search,
+  Filter,
+  Download,
+  Mail,
+  Ban,
+  ArrowLeft,
+  Trash2,
+  Loader2, // Added missing import
+  CreditCard
 } from 'lucide-react';
 import { supabase } from '@/services/supabaseClient';
 import { Button } from '@/components/ui/button';
@@ -53,6 +62,7 @@ function UserManagement() {
 
       const sevenDaysAgo = new Date();
       sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      
       const recentUsers = data.filter(u => new Date(u.created_at) >= sevenDaysAgo);
       const banned = data.filter(u => u.banned).length;
       const active = data.filter(u => !u.banned).length;
@@ -91,13 +101,12 @@ function UserManagement() {
         aVal = new Date(aVal);
         bVal = new Date(bVal);
       }
-      return sortOrder === 'asc' ? aVal - bVal : bVal - aVal;
+      return sortOrder === 'asc' ? (aVal > bVal ? 1 : -1) : (bVal > aVal ? 1 : -1);
     });
 
     setFilteredUsers(filtered);
   };
 
-  // Export CSV
   const exportUsersToCSV = () => {
     if (filteredUsers.length === 0) {
       toast.error('No users to export');
@@ -122,9 +131,6 @@ function UserManagement() {
     toast.success('Users exported successfully ✅');
   };
 
-  const getStatusColor = (u) =>
-    u.banned ? 'text-red-600 bg-red-50 border-red-200' : 'text-green-600 bg-green-50 border-green-200';
-
   const banUser = async (id, status) => {
     try {
       const { error } = await supabase.from('users').update({ banned: status }).eq('id', id);
@@ -146,13 +152,12 @@ function UserManagement() {
     }
   };
 
-  // ✅ New: Update credits (increase or decrease)
   const updateCredits = async (id, newCredits) => {
     try {
       const { error } = await supabase.from('users').update({ credits: newCredits }).eq('id', id);
       if (error) throw error;
       setUsers(prev => prev.map(u => u.id === id ? { ...u, credits: newCredits } : u));
-      toast.success('Credits updated successfully');
+      toast.success('Credits updated');
     } catch {
       toast.error('Failed to update credits');
     }
@@ -162,200 +167,190 @@ function UserManagement() {
     const subject = encodeURIComponent('Greetings from Career Mock!');
     const body = encodeURIComponent(
       `Hello ${username || 'User'},\n\n` +
-      `We hope you're doing great! 👋\n\n` +
-      `Your current credit balance is *${credits}*.\n` +
-      `Top up your credits here:\nhttps://career-mock.vercel.app/recruiter/billing\n\n` +
-      `Best,\nCareer Mock Team 💼`
+      `Your current credit balance is ${credits}.\n\n` +
+      `Best,\nCareer Mock Team`
     );
     window.location.href = `mailto:${email}?subject=${subject}&body=${body}`;
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 p-4 sm:p-6 md:p-8">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl shadow-md p-6 text-white mb-8">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold">User Management</h1>
-            <p className="text-blue-100 mt-1">Manage and monitor all registered users</p>
+    <div className="min-h-screen bg-[#F5F5F7] text-[#1D1D1F] font-sans selection:bg-blue-100">
+      {/* Apple-Style Navigation Bar */}
+      <nav className="sticky top-0 z-50 w-full bg-white/80 backdrop-blur-md border-b border-[#D2D2D7]">
+        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <button onClick={() => router.back()} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+              <ArrowLeft className="w-5 h-5" />
+            </button>
+            <h1 className="text-xl font-semibold tracking-tight">User Management</h1>
           </div>
-          <Button
-            onClick={exportUsersToCSV}
-            className="bg-white/10 text-white hover:bg-white/20 backdrop-blur-md"
+          <Button 
+            onClick={exportUsersToCSV} 
+            className="rounded-full bg-[#0071E3] hover:bg-[#0077ED] text-white px-5 h-9 font-medium shadow-sm transition-all active:scale-95"
           >
-            <Download className="w-4 h-4 mr-2" /> Export Users
+            <Download className="w-4 h-4 mr-2" /> Export
           </Button>
         </div>
-      </div>
+      </nav>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
-        {Object.entries({
-          'Total Users': stats.totalUsers,
-          'Active Users': stats.activeUsers,
-          'Banned Users': stats.bannedUsers,
-          'Interviews': stats.totalInterviews,
-          'Candidates': stats.totalCandidates,
-          'Recent Signups': stats.recentSignups,
-        }).map(([title, value]) => (
-          <Card
-            key={title}
-            className="hover:shadow-lg transition-all duration-300 border border-gray-200"
-          >
-            <CardHeader className="pb-1">
-              <CardTitle className="text-sm text-gray-600">{title}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-bold text-gray-900">{value}</p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      <main className="max-w-7xl mx-auto p-6 md:p-10">
+        {/* Horizontal Stats Strip */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-10">
+          {Object.entries({
+            'Total': stats.totalUsers,
+            'Active': stats.activeUsers,
+            'Banned': stats.bannedUsers,
+            'Interviews': stats.totalInterviews,
+            'Candidates': stats.totalCandidates,
+            'New (7d)': stats.recentSignups,
+          }).map(([title, value]) => (
+            <div key={title} className="bg-white rounded-2xl p-5 shadow-sm border border-[#D2D2D7]/50">
+              <p className="text-[12px] font-semibold text-[#86868B] uppercase tracking-wider mb-1">{title}</p>
+              <p className="text-2xl font-bold tracking-tight">{value}</p>
+            </div>
+          ))}
+        </div>
 
-      {/* Filters */}
-      <Card className="mb-6 shadow-sm border-gray-200">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg font-semibold text-gray-800">
-            <Search className="w-5 h-5 text-blue-600" />
-            Search & Filter Users
-          </CardTitle>
-          <CardDescription>Find users or filter by status</CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col sm:flex-row sm:items-center gap-3">
-          <div className="relative w-full sm:w-1/2">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+        {/* Search & Filter Bar */}
+        <div className="flex flex-col md:flex-row gap-4 mb-8">
+          <div className="relative flex-grow">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#86868B] w-4 h-4" />
             <Input
-              placeholder="Search by name or email..."
+              placeholder="Search users..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
+              className="pl-11 h-12 bg-white rounded-2xl border-[#D2D2D7] focus:ring-[#0071E3] focus:border-[#0071E3] transition-all shadow-sm"
             />
           </div>
-          <div className="flex flex-wrap gap-2 justify-end w-full sm:w-auto">
+          <div className="flex gap-2">
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="px-3 py-2 border rounded-md text-sm"
+              className="h-12 px-4 rounded-2xl border border-[#D2D2D7] bg-white text-sm font-medium focus:ring-2 ring-blue-50 outline-none cursor-pointer"
             >
-              <option value="created_at">Created Date</option>
+              <option value="created_at">Date Created</option>
               <option value="name">Name</option>
-              <option value="email">Email</option>
+              <option value="credits">Credits</option>
             </select>
             <Button
               variant="outline"
               onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
-              className="text-sm"
+              className="h-12 px-5 rounded-2xl border-[#D2D2D7] bg-white font-medium hover:bg-gray-50 shadow-sm"
             >
-              <Filter className="w-4 h-4 mr-1" /> {sortOrder === 'asc' ? 'Asc' : 'Desc'}
+              <Filter className="w-4 h-4 mr-2" />
+              {sortOrder === 'asc' ? 'Ascending' : 'Descending'}
             </Button>
             <Button
               variant={showBanned ? 'default' : 'outline'}
               onClick={() => setShowBanned(!showBanned)}
-              className={`${showBanned ? 'bg-red-600 hover:bg-red-700 text-white' : ''} text-sm`}
+              className={`h-12 px-5 rounded-2xl font-medium transition-all ${
+                showBanned 
+                ? 'bg-[#FF3B30] text-white hover:bg-[#D70015]' 
+                : 'border-[#D2D2D7] bg-white text-[#FF3B30]'
+              }`}
             >
-              <Ban className="w-4 h-4 mr-1" /> {showBanned ? 'Hide Banned' : 'Show Banned'}
+              <Ban className="w-4 h-4 mr-2" /> {showBanned ? 'Hide Banned' : 'Show Banned'}
             </Button>
           </div>
-        </CardContent>
-      </Card>
+        </div>
 
-      {/* Users */}
-      <Card className="shadow-sm border-gray-200">
-        <CardHeader>
-          <Button onClick={() => router.back()} variant="outline" size="sm" className="mb-3">
-            <ArrowLeft className="w-4 h-4 mr-2" /> Return to Dashboard
-          </Button>
-          <CardTitle>All Users ({filteredUsers.length})</CardTitle>
-          <CardDescription>Manage users and take actions</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <div className="text-center py-8 text-gray-500">Loading users...</div>
-          ) : filteredUsers.length === 0 ? (
-            <p className="text-center py-6 text-gray-500">No users found.</p>
-          ) : (
-            <div className="space-y-3">
-              {filteredUsers.map((u) => (
-                <div
-                  key={u.id}
-                  className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 border rounded-lg hover:shadow-md hover:bg-gray-50 transition"
-                >
-                  <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                      <span className="text-blue-700 font-semibold">
+        {/* User List Pane */}
+        <Card className="rounded-[28px] border-none shadow-sm overflow-hidden bg-white/70 backdrop-blur-sm">
+          <CardContent className="p-0">
+            {loading ? (
+              <div className="flex flex-col items-center justify-center py-20 gap-3">
+                <Loader2 className="w-8 h-8 animate-spin text-[#0071E3]" />
+                <p className="text-[#86868B] font-medium tracking-tight">Updating users...</p>
+              </div>
+            ) : filteredUsers.length === 0 ? (
+              <div className="text-center py-20 text-[#86868B] font-medium">No records found.</div>
+            ) : (
+              <div className="divide-y divide-[#D2D2D7]/50">
+                {filteredUsers.map((u) => (
+                  <div key={u.id} className="p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-4 hover:bg-white/40 transition-colors">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-full bg-[#E5E5EA] flex items-center justify-center text-[#1D1D1F] font-bold text-lg">
                         {u.name?.charAt(0)?.toUpperCase() || 'U'}
-                      </span>
+                      </div>
+                      <div className="space-y-0.5">
+                        <h3 className="font-bold text-[#1D1D1F]">{u.name || 'Anonymous User'}</h3>
+                        <p className="text-sm text-[#86868B] font-medium">{u.email}</p>
+                        <p className="text-[11px] text-[#A1A1A6] font-semibold uppercase tracking-wider">
+                          Joined {moment(u.created_at).format('MMM DD, YYYY')}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <h3 className="font-medium text-gray-900">{u.name}</h3>
-                      <p className="text-sm text-gray-500">{u.email}</p>
-                      <p className="text-xs text-gray-400">
-                        Joined {moment(u.created_at).format('MMM DD, YYYY')}
-                      </p>
 
-                      {/* ✅ Credit Control Section */}
-                      <div className="flex items-center gap-2 text-xs text-blue-600 font-semibold mt-1">
-                        Credits:
+                    <div className="flex flex-wrap items-center gap-6">
+                      {/* Credits Control Card */}
+                      <div className="flex items-center bg-[#F5F5F7] rounded-full px-2 py-1 border border-[#D2D2D7]/30">
                         <Button
-                          size="sm"
-                          variant="outline"
-                          className="px-2 h-6 text-sm"
+                          variant="ghost"
+                          size="icon"
+                          className="w-8 h-8 rounded-full text-[#1D1D1F]"
                           onClick={() => updateCredits(u.id, Math.max((u.credits ?? 0) - 1, 0))}
                         >
                           -
                         </Button>
-                        <span>{u.credits ?? 0}</span>
+                        <div className="px-3 flex flex-col items-center">
+                          <span className="text-[10px] font-bold text-[#86868B] uppercase leading-none">Credits</span>
+                          <span className="text-sm font-bold">{u.credits ?? 0}</span>
+                        </div>
                         <Button
-                          size="sm"
-                          variant="outline"
-                          className="px-2 h-6 text-sm"
+                          variant="ghost"
+                          size="icon"
+                          className="w-8 h-8 rounded-full text-[#1D1D1F]"
                           onClick={() => updateCredits(u.id, (u.credits ?? 0) + 1)}
                         >
                           +
                         </Button>
                       </div>
+
+                      {/* Status & Actions */}
+                      <div className="flex items-center gap-3">
+                        <span className={`px-4 py-1.5 rounded-full text-[12px] font-bold ${
+                          u.banned 
+                          ? 'bg-[#FF3B30]/10 text-[#FF3B30]' 
+                          : 'bg-[#34C759]/10 text-[#34C759]'
+                        }`}>
+                          {u.banned ? 'Banned' : 'Active'}
+                        </span>
+                        
+                        <div className="h-6 w-[1px] bg-[#D2D2D7]" />
+
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="rounded-full text-[#0066CC]"
+                          onClick={() => handleSendMail(u.email, u.name, u.credits ?? 0)}
+                        >
+                          <Mail className="w-5 h-5" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className={`rounded-full ${u.banned ? 'text-[#34C759]' : 'text-[#FF9500]'}`}
+                          onClick={() => banUser(u.id, !u.banned)}
+                        >
+                          <Ban className="w-5 h-5" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="rounded-full text-[#FF3B30] hover:bg-red-50"
+                          onClick={() => { if(window.confirm('Delete this user?')) deleteUser(u.id); }}
+                        >
+                          <Trash2 className="w-5 h-5" />
+                        </Button>
+                      </div>
                     </div>
                   </div>
-
-                  <div className="flex flex-wrap gap-2 justify-end">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="text-blue-600 hover:text-blue-800"
-                      onClick={() => handleSendMail(u.email, u.name, u.credits ?? 0)}
-                    >
-                      <Mail className="w-4 h-4 mr-1" /> Notify
-                    </Button>
-                    <span
-                      className={`px-3 py-1 rounded-full border text-xs font-medium ${getStatusColor(
-                        u
-                      )}`}
-                    >
-                      {u.banned ? 'Banned' : 'Active'}
-                    </span>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => banUser(u.id, !u.banned)}
-                      className="text-xs"
-                    >
-                      {u.banned ? 'Unban' : 'Ban'}
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => deleteUser(u.id)}
-                      className="text-xs text-red-600 border-red-200 hover:bg-red-50"
-                    >
-                      Delete
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </main>
     </div>
   );
 }
