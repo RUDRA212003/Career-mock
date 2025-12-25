@@ -85,11 +85,11 @@ export default function AuthCallback() {
       localStorage.removeItem('pending_role');
       setLoading(false);
 
-      // ✅ CORRECT REDIRECTS (Option 1)
+      // ✅ CORRECT REDIRECTS (now without /main)
       if (finalRole === 'recruiter') {
-        router.push('/main/recruiter/dashboard');
+        router.push('/recruiter/dashboard');
       } else {
-        router.push('/main/candidate/dashboard');
+        router.push('/candidate/dashboard');
       }
     };
 

@@ -35,7 +35,7 @@ export default function CareerMockLanding() {
   // true  = Show components/Maintenance.jsx
   // false = Show your actual Landing Page
   // ==========================================
-  const isUpdating = true; 
+  const isUpdating = false; 
 
   if (isUpdating) {
     return <Maintenance />;
