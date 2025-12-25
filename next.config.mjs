@@ -1,6 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: "standalone",
   reactStrictMode: true,
 
   images: {
@@ -9,17 +8,10 @@ const nextConfig = {
       { protocol: "https", hostname: "lh3.googleusercontent.com" },
       { protocol: "https", hostname: "cdn-icons-png.flaticon.com" },
 
-      // Existing Supabase project
+      // Allow all Supabase projects (simpler & safe)
       {
         protocol: "https",
-        hostname: "grtduudyzchqzffvcbtz.supabase.co",
-        pathname: "/storage/v1/object/public/**",
-      },
-
-      // ✅ ADD THIS (current Supabase project)
-      {
-        protocol: "https",
-        hostname: "listgkwerjnsuqguvfcw.supabase.co",
+        hostname: "*.supabase.co",
         pathname: "/storage/v1/object/public/**",
       },
     ],
