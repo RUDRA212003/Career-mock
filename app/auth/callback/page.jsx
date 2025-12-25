@@ -1,4 +1,5 @@
 'use client';
+
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/services/supabaseClient';
@@ -11,95 +12,84 @@ export default function AuthCallback() {
   useEffect(() => {
     const handleAuthRedirect = async () => {
       setLoading(true);
+
       const {
         data: { session },
         error,
       } = await supabase.auth.getSession();
 
       if (error || !session?.user) {
-        toast.error("Failed to complete sign in");
-        console.error("Session error:", error);
+        toast.error('Failed to complete sign in');
+        console.error('Session error:', error);
         setLoading(false);
+        router.push('/login');
         return;
       }
 
       const user = session.user;
       const email = user.email;
 
-      // 1. Check if user already exists
+      // 🔹 Check if user exists
       const { data: existingUser, error: fetchError } = await supabase
         .from('users')
         .select('id, role, banned')
         .eq('email', email)
         .single();
 
-      if (fetchError && fetchError.code !== 'PGRST116') { // Not found is ok
-        toast.error("Error fetching user profile: " + fetchError.message);
-        console.error("Fetch error:", fetchError);
+      // Ignore "not found" error
+      if (fetchError && fetchError.code !== 'PGRST116') {
+        toast.error('Error fetching user profile');
+        console.error(fetchError);
         setLoading(false);
-        return;
-      }
-
-      // Check if user is banned
-      if (existingUser && existingUser.banned) {
-        await supabase.auth.signOut();
-        toast.error('Your account has been banned. Please contact support for more information.');
         router.push('/login');
-        setLoading(false);
         return;
       }
 
-      let finalRole = 'candidate'; 
-      let justCreated = false;
+      // 🔒 Banned user
+      if (existingUser?.banned) {
+        await supabase.auth.signOut();
+        toast.error('Your account has been banned.');
+        setLoading(false);
+        router.push('/login');
+        return;
+      }
 
+      let finalRole = 'candidate';
+
+      // 🆕 New user
       if (!existingUser) {
-        const savedRole = localStorage.getItem("pending_role") || 'candidate';
+        const savedRole = localStorage.getItem('pending_role') || 'candidate';
         finalRole = savedRole;
-      
+
         const { error: insertError } = await supabase.from('users').insert([
           {
             email: user.email,
-            name: user.user_metadata?.full_name || "No Name",
+            name: user.user_metadata?.full_name || 'No Name',
             role: savedRole,
           },
         ]);
 
-        if (insertError) {
-          // If duplicate key error, just continue as if user exists
-          if (
-            insertError.code === '23505' || // Postgres unique violation
-            (insertError.message && insertError.message.includes('duplicate key'))
-          ) {
-            // User already exists, fetch their role
-            const { data: userRow, error: fetchAgainError } = await supabase
-              .from('users')
-              .select('role')
-              .eq('email', user.email)
-              .single();
-            if (userRow) {
-              finalRole = userRow.role;
-            }
-            // Continue to dashboard
-          } else {
-            toast.error("Failed to create user profile: " + insertError.message);
-            console.error("Insert error:", insertError);
-            setLoading(false);
-            return;
-          }
-        } else {
-          toast.success("Profile created successfully.");
+        if (insertError && insertError.code !== '23505') {
+          toast.error('Failed to create user profile');
+          console.error(insertError);
+          setLoading(false);
+          router.push('/login');
+          return;
         }
-      } else if (existingUser) {
+
+        toast.success('Profile created successfully');
+      } else {
         finalRole = existingUser.role;
       }
 
-      localStorage.removeItem("pending_role");
-
+      localStorage.removeItem('pending_role');
       setLoading(false);
+
+      // ✅ CORRECT REDIRECTS (Option 1)
       if (finalRole === 'recruiter') {
-        router.push('/recruiter/dashboard');
+        router.push('/main/recruiter/dashboard');
       } else {
-        router.push('/candidate/dashboard');
+        router.push('/main/candidate/dashboard');
       }
     };
 
@@ -111,10 +101,11 @@ export default function AuthCallback() {
       <div className="flex h-screen items-center justify-center bg-gray-50">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Finalizing Google login, please wait...</p>
+          <p className="text-gray-600">Finalizing login, please wait...</p>
         </div>
       </div>
     );
   }
+
   return null;
 }

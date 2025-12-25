@@ -12,6 +12,9 @@ import { useRouter } from "next/navigation";
 import { useState, useRef } from "react";
 import { Dialog } from "@headlessui/react";
 
+// --- IMPORT EXTERNAL MAINTENANCE COMPONENT ---
+import Maintenance from "@/components/Maintenance";
+
 // --- Smooth Scroll Reveal (for text, cards, etc.) ---
 const ScrollFadeIn = ({ children, delay = 0, duration = 0.8, yOffset = 30 }) => (
   <motion.div
@@ -26,6 +29,18 @@ const ScrollFadeIn = ({ children, delay = 0, duration = 0.8, yOffset = 30 }) => 
 
 export default function CareerMockLanding() {
   const router = useRouter();
+
+  // ==========================================
+  // TOGGLE THIS VARIABLE: 
+  // true  = Show components/Maintenance.jsx
+  // false = Show your actual Landing Page
+  // ==========================================
+  const isUpdating = true; 
+
+  if (isUpdating) {
+    return <Maintenance />;
+  }
+
   const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
   const heroRef = useRef(null);
   const { scrollYProgress } = useScroll({
@@ -89,7 +104,7 @@ export default function CareerMockLanding() {
         </div>
       </nav>
 
-      {/* 🎬 Hero Section with Animated Logo and Scroll Parallax */}
+      {/* 🎬 Hero Section */}
       <section ref={heroRef} className="relative pt-32 pb-48 overflow-hidden bg-gradient-to-b from-[#f5f5f7] to-white">
         <div className="max-w-5xl mx-auto text-center px-6">
           <motion.div
@@ -97,9 +112,8 @@ export default function CareerMockLanding() {
             animate={{ scale: 1, opacity: 1 }}
             transition={{ duration: 1.8, ease: [0.22, 1, 0.36, 1], delay: 0.2 }}
             style={{ scale: logoScale, y: logoY }}
-            className="mb-16 flex justify-center perspective-1000" // Added perspective for 3D
+            className="mb-16 flex justify-center perspective-1000"
           >
-            {/* LARGE CENTRAL LOGO with continuous 3D rotation */}
             <motion.div
               animate={{ rotateY: [0, 15, 0, -15, 0], rotateX: [0, 10, 0, -10, 0] }}
               transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
@@ -141,7 +155,7 @@ export default function CareerMockLanding() {
         </div>
       </section>
 
-      {/* 📊 Feature Grid: More dynamic, with icon animations */}
+      {/* 📊 Feature Grid */}
       <section id="features" className="py-32 px-6 bg-white">
         <div className="max-w-[1100px] mx-auto">
           <ScrollFadeIn yOffset={50} delay={0.1}>
@@ -190,7 +204,7 @@ export default function CareerMockLanding() {
         </div>
       </section>
 
-      {/* 🚀 Infinite Looping Marquee for Partners */}
+      {/* 🚀 Infinite Looping Marquee */}
       <section className="py-24 border-y border-gray-100 overflow-hidden bg-[#fbfbfd]">
         <ScrollFadeIn yOffset={40} delay={0.1}>
           <p className="text-center text-[12px] font-bold text-[#86868b] mb-12 uppercase tracking-[0.2em]">TRUSTED BY ASPIRANTS AT LEADING COMPANIES</p>
@@ -208,7 +222,7 @@ export default function CareerMockLanding() {
         </div>
       </section>
 
-      {/* 👥 Team Section: Photos Restored + Dynamic Hover */}
+      {/* 👥 Team Section */}
       <section id="team" className="py-32 px-6 bg-white">
         <div className="max-w-[1100px] mx-auto">
           <ScrollFadeIn yOffset={50} delay={0.1}>
@@ -246,7 +260,7 @@ export default function CareerMockLanding() {
         </div>
       </section>
 
-      {/* 🏮 Footer: Refined Professional */}
+      {/* 🏮 Footer */}
       <footer className="bg-[#f5f5f7] pt-28 pb-12 px-6 border-t border-gray-200">
         <div className="max-w-[1024px] mx-auto">
           <div className="flex flex-col md:flex-row justify-between items-start gap-12 pb-12 border-b border-gray-200">
