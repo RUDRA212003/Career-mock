@@ -16,7 +16,7 @@ import { Dialog } from "@headlessui/react";
 import Maintenance from "@/components/Maintenance";
 
 // --- HAPTIC FEEDBACK UTILITY ---
-const triggerHaptic = (pattern = 10) => {
+const triggerHaptic = (pattern = 40) => {
   if (typeof window !== "undefined" && window.navigator && window.navigator.vibrate) {
     window.navigator.vibrate(pattern);
   }
