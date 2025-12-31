@@ -1,33 +1,73 @@
 "use client";
-import { motion, useScroll, useTransform } from "framer-motion";
+import { motion, AnimatePresence, useScroll, useTransform } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { 
   ChevronRight, Mic, ShieldCheck, 
-  BarChart3, Target, Zap, TrendingUp 
+  BarChart3, Target, Sparkles, Gift, Zap, TrendingUp, Lock, CreditCard
 } from "lucide-react"; 
 import { FaLinkedin, FaGithub } from "react-icons/fa";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, useRef } from "react";
-import { Dialog } from "@headlessui/react";
+import { useState, useEffect, useRef } from "react";
 
-// --- IMPORT EXTERNAL MAINTENANCE COMPONENT ---
-import Maintenance from "@/components/Maintenance";
+// --- PREMIUM GOLD & SILVER PAPER BLAST ---
+const PremiumGoldConfetti = () => {
+  const pieces = Array.from({ length: 90 });
+  // Standard Premium Palette: Deep Gold, Champagne, Silver, White
+  const colors = ["#D4AF37", "#F1E5AC", "#C0C0C0", "#FFFFFF", "#B8860B"];
+  
+  return (
+    <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden bg-white">
+      {pieces.map((_, i) => {
+        const angle = Math.random() * Math.PI * 2;
+        const velocity = Math.random() * 45 + 15; 
+        const targetX = Math.cos(angle) * velocity;
+        const targetY = Math.sin(angle) * velocity - 25; 
 
+<<<<<<< HEAD
 // --- HAPTIC FEEDBACK UTILITY ---
 const triggerHaptic = (pattern = 40) => {
   if (typeof window !== "undefined" && window.navigator && window.navigator.vibrate) {
     window.navigator.vibrate(pattern);
   }
+=======
+        return (
+          <motion.div
+            key={i}
+            initial={{ y: "45vh", x: "50vw", scale: 0, rotate: 0 }}
+            animate={{ 
+              x: ["50vw", `${50 + targetX}vw`, `${50 + targetX * 1.3}vw`],
+              y: ["45vh", `${45 + targetY}vh`, "110vh"],
+              rotateX: [0, 360, 720],
+              rotateY: [0, 180, 540],
+              scale: [0, 1, 1, 0.6],
+              opacity: [0, 0.8, 0.8, 0] 
+            }}
+            transition={{ 
+              duration: Math.random() * 4 + 3,
+              repeat: Infinity,
+              delay: Math.random() * 6,
+              ease: [0.23, 1, 0.32, 1]
+            }}
+            className="absolute w-1.5 h-3.5 rounded-sm shadow-sm"
+            style={{ 
+              backgroundColor: colors[i % colors.length],
+              border: '0.5px solid rgba(0,0,0,0.05)'
+            }}
+          />
+        );
+      })}
+    </div>
+  );
+>>>>>>> c26d2ed (2026 update)
 };
 
-// --- Smooth Scroll Reveal ---
 const ScrollFadeIn = ({ children, delay = 0, duration = 0.8, yOffset = 30 }) => (
   <motion.div
     initial={{ opacity: 0, y: yOffset }}
     whileInView={{ opacity: 1, y: 0 }}
-    viewport={{ once: true, margin: "-100px" }}
+    viewport={{ once: true, margin: "-20px" }} 
     transition={{ duration, delay, ease: [0.22, 1, 0.36, 1] }}
   >
     {children}
@@ -36,14 +76,9 @@ const ScrollFadeIn = ({ children, delay = 0, duration = 0.8, yOffset = 30 }) => 
 
 export default function CareerMockLanding() {
   const router = useRouter();
-  const isUpdating = false; 
-
-  if (isUpdating) {
-    return <Maintenance />;
-  }
-
-  const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
+  const [adminMenu, setAdminMenu] = useState({ visible: false, x: 0, y: 0 });
   const heroRef = useRef(null);
+
   const { scrollYProgress } = useScroll({
     target: heroRef,
     offset: ["start start", "end start"]
@@ -51,7 +86,17 @@ export default function CareerMockLanding() {
 
   const logoScale = useTransform(scrollYProgress, [0, 1], [1, 0.8]);
   const logoY = useTransform(scrollYProgress, [0, 1], [0, -100]);
-  const heroBackgroundY = useTransform(scrollYProgress, [0, 1], ["0%", "30%"]);
+
+  const handleContextMenu = (e) => {
+    e.preventDefault();
+    setAdminMenu({ visible: true, x: e.clientX, y: e.clientY });
+  };
+
+  useEffect(() => {
+    const handleClick = () => setAdminMenu({ ...adminMenu, visible: false });
+    window.addEventListener('click', handleClick);
+    return () => window.removeEventListener('click', handleClick);
+  }, [adminMenu]);
 
   const teamMembers = [
     { name: "RUDRESH M", usn: "(1KI22CS098)", role: "FULL STACK DEVELOPER", photo: "/team/rudresh.jpg", linkedin: "https://www.linkedin.com/in/rudresh-manjunath21/", github: "https://github.com/RUDRA212003" },
@@ -60,205 +105,176 @@ export default function CareerMockLanding() {
     { name: "RUCHITHA S S", usn: "(1KI22CS097)", role: "BACKEND DEVELOPER", photo: "/team/ruchitha.jpg", linkedin: "https://www.linkedin.com/in/ruchitha-sankappa/", github: "https://github.com/ruchitha" },
   ];
 
-  const companies = [
-    "/clientLogos/eeshanya.png", "/clientLogos/Google.png", "/clientLogos/hrh.jpeg",
-    "/clientLogos/tata.png", "/clientLogos/techmahindra.png", "/clientLogos/teleperformance.png", "/clientLogos/Wipro.svg"
-  ];
-
   return (
-    <div className="bg-[#FFFFFF] text-[#1d1d1f] font-sans selection:bg-[#0071e3]/10 antialiased relative">
+    <div className="bg-white text-[#1d1d1f] font-sans antialiased relative selection:bg-yellow-100 overflow-x-hidden">
       
-      {/* 🌌 Animated Background */}
-      <motion.div style={{ y: heroBackgroundY }} className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
-        <motion.div animate={{ x: [-50, 50], y: [-50, 50], rotate: [0, 360] }} transition={{ duration: 30, repeat: Infinity, ease: "linear" }} className="absolute top-[10%] left-[10%] w-64 h-64 bg-blue-200/30 rounded-full blur-[100px]" />
-        <motion.div animate={{ x: [50, -50], y: [50, -50], rotate: [360, 0] }} transition={{ duration: 35, repeat: Infinity, ease: "linear" }} className="absolute bottom-[20%] right-[15%] w-80 h-80 bg-purple-200/30 rounded-full blur-[120px]" />
-      </motion.div>
+      {/* 🎊 PREMIUM GOLD BLAST */}
+      <PremiumGoldConfetti />
 
-      {/* 🧭 Top Navigation */}
-      <nav className="sticky top-0 z-[100] w-full bg-white/80 backdrop-blur-xl border-b border-gray-100">
+      {/* Navigation */}
+      <nav className="fixed top-0 z-[100] w-full bg-white/70 backdrop-blur-md border-b border-gray-100/50">
         <div className="max-w-[1024px] mx-auto h-14 flex items-center justify-between px-6">
           <div className="flex items-center gap-2">
             <Image src="/logo.png" alt="Logo" width={28} height={28} />
             <span className="text-xl font-bold tracking-tight">Career Mock</span>
           </div>
           <div className="hidden md:flex items-center gap-8 text-[13px] font-normal text-[#424245]">
-            <a href="#features" onClick={() => triggerHaptic(10)} className="hover:text-[#0071e3] transition-colors">How it works</a>
-            <a href="#team" onClick={() => triggerHaptic(10)} className="hover:text-[#0071e3] transition-colors">Our Team</a>
-            <Button 
-              onClick={() => {
-                triggerHaptic(20);
-                router.push("/login");
-              }}
-              className="bg-[#0071e3] hover:bg-[#0077ed] text-white text-[12px] px-5 py-0 h-8 rounded-full font-medium shadow-md shadow-blue-200/50"
-            >
+            <a href="#features" className="hover:text-yellow-600 transition-colors font-medium">Features</a>
+            <a href="#team" className="hover:text-yellow-600 transition-colors font-medium">Our Team</a>
+            <Button onClick={() => router.push("/login")} className="bg-black text-white text-[12px] px-5 py-0 h-8 rounded-full font-medium shadow-lg active:scale-95 transition-all">
               Start Session
             </Button>
           </div>
         </div>
       </nav>
 
-      {/* 🎬 Hero Section */}
-      <section ref={heroRef} className="relative pt-32 pb-48 overflow-hidden bg-gradient-to-b from-[#f5f5f7] to-white">
-        <div className="max-w-5xl mx-auto text-center px-6">
-          <motion.div style={{ scale: logoScale, y: logoY }} initial={{ scale: 0.7, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 1.8, ease: [0.22, 1, 0.36, 1], delay: 0.2 }} className="mb-16 flex justify-center perspective-1000">
-            <motion.div animate={{ rotateY: [0, 15, 0, -15, 0], rotateX: [0, 10, 0, -10, 0] }} transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}>
-              <Image src="/logo.png" alt="Career Mock Logo" width={250} height={250} priority className="drop-shadow-[0_25px_60px_rgba(0,0,0,0.15)]" />
-            </motion.div>
+      {/* Hero */}
+      <section ref={heroRef} className="relative pt-32 pb-24 flex flex-col items-center justify-center text-center px-6 min-h-[90vh]">
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 0.04 }} transition={{ duration: 2 }} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[30vw] font-black text-black select-none z-0 tracking-tighter italic">
+          2026
+        </motion.div>
+
+        <div className="relative z-20">
+          <motion.div style={{ scale: logoScale, y: logoY }} initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 1 }} className="mb-8">
+            <div className="relative inline-block">
+                <Image src="/logo.png" alt="Logo" width={220} height={220} className="drop-shadow-2xl" />
+                <div className="absolute -top-2 -right-6 bg-white text-yellow-600 px-3 py-1 rounded-full font-bold text-[10px] shadow-sm border border-yellow-100 uppercase tracking-widest">
+                    2026 Edition
+                </div>
+            </div>
           </motion.div>
 
-          <ScrollFadeIn delay={0.4}>
-            <h1 className="text-5xl md:text-8xl font-bold tracking-tight leading-[1.05] mb-8">
-              Elevate your career. <br />
-              <span className="bg-gradient-to-r from-[#0071e3] to-[#5e5ce6] bg-clip-text text-transparent">Master the interview.</span>
+          <ScrollFadeIn delay={0.3}>
+            <div className="flex items-center justify-center gap-2 mb-4 opacity-40 uppercase tracking-[0.5em] text-[10px] font-bold">
+                <Sparkles size={12} className="text-yellow-600" /> Happy New Year // 2026
+            </div>
+            <h1 className="text-6xl md:text-[90px] font-bold tracking-tighter leading-[0.95] mb-8">
+                New Year. <br /> <span className="text-yellow-600">Dream Career.</span>
             </h1>
-          </ScrollFadeIn>
-
-          <ScrollFadeIn delay={0.6}>
-            <p className="text-xl md:text-2xl text-[#636366] font-medium max-w-2xl mx-auto mb-12">
-              Practice with AI, get instant feedback, and confidently land your next role.
+            <p className="text-lg md:text-xl text-gray-500 font-medium max-w-2xl mx-auto mb-10 leading-relaxed italic">
+              Hope this year brings you the career success you deserve.
             </p>
+            <Button onClick={() => router.push("/login")} size="lg" className="h-16 px-10 rounded-full bg-black hover:bg-yellow-600 text-white font-bold text-lg tracking-tight shadow-xl transition-colors">
+                Initialize Career 2026 <ChevronRight className="ml-2" />
+            </Button>
           </ScrollFadeIn>
+        </div>
+      </section>
 
-          <ScrollFadeIn delay={0.8}>
-            <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
-              <Button 
-                onClick={() => {
-                  triggerHaptic(25); // Stronger haptic for main CTA
-                  router.push("/login");
-                }} 
-                size="lg" 
-                className="rounded-full bg-[#1d1d1f] hover:bg-[#000] px-10 h-14 text-lg font-semibold shadow-xl shadow-gray-300/30"
-              >
-                Start Free Trial
-              </Button>
-              <Link 
-                href="#features" 
-                onClick={() => triggerHaptic(10)}
-                className="text-[19px] text-[#0066cc] hover:underline flex items-center gap-1 font-medium group"
-              >
-                Explore capabilities <ChevronRight size={22} className="group-hover:translate-x-1 transition-transform" />
-              </Link>
+      {/* Updated Offer Section with Button */}
+      <section className="py-20 px-6 relative z-10">
+        <div className="max-w-4xl mx-auto">
+          <ScrollFadeIn>
+            <div className="bg-[#F5F5F7] rounded-[40px] p-12 flex flex-col md:flex-row items-center justify-between gap-10 border border-gray-100 shadow-sm relative overflow-hidden">
+              <div className="text-left space-y-4">
+                <div className="inline-flex items-center gap-2 px-3 py-1 bg-white rounded-full text-[10px] font-bold uppercase tracking-widest text-yellow-600 border border-yellow-100">
+                  <Gift size={12} /> Seasonal Event
+                </div>
+                <h2 className="text-5xl font-bold tracking-tight text-[#1D1D1F]">2+0+2+6 <br /><span className="text-yellow-600">OFFER</span></h2>
+                <p className="text-gray-500 font-medium max-w-xs leading-snug">Unlock your potential with a 10% discount throughout Jan 2026.</p>
+                
+                {/* NEW REDIRECT BUTTON */}
+                <Button 
+                  onClick={() => router.push('/recruiter/billing')}
+                  className="mt-4 bg-yellow-600 hover:bg-yellow-700 text-white rounded-xl px-6 h-12 font-bold flex items-center gap-2 shadow-lg shadow-yellow-600/20 active:scale-95 transition-all"
+                >
+                  Check Out Offer <CreditCard size={18} />
+                </Button>
+              </div>
+              <div className="bg-white p-8 rounded-[32px] text-center shadow-sm min-w-[200px] border border-gray-100">
+                 <span className="text-7xl font-bold tracking-tighter text-[#1D1D1F]">10%</span>
+                 <p className="text-[10px] font-black uppercase tracking-widest mt-2 text-yellow-600">Discount Applied</p>
+              </div>
             </div>
           </ScrollFadeIn>
         </div>
       </section>
 
-      {/* 📊 Feature Grid */}
-      <section id="features" className="py-32 px-6 bg-white">
-        <div className="max-w-[1100px] mx-auto">
-          <ScrollFadeIn yOffset={50} delay={0.1}>
-            <h2 className="text-4xl md:text-6xl font-bold text-center tracking-tight mb-20">
+      {/* Features Section */}
+      <section id="features" className="py-32 px-6 bg-white relative z-10">
+        <div className="max-w-[1100px] mx-auto text-center">
+          <ScrollFadeIn>
+            <h2 className="text-4xl md:text-5xl font-bold tracking-tight mb-20 text-[#1D1D1F]">
               Intelligent features, <br /> real-world results.
             </h2>
           </ScrollFadeIn>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[
-              { icon: Mic, title: "AI Voice Analysis", desc: "Refine your tone, pace, and clarity with AI-driven speech insights.", color: "text-[#0071e3]", bg: "text-blue-100/50", extra: TrendingUp },
-              { icon: Target, title: "Role-Specific Drills", desc: "Practice scenarios meticulously crafted for your target tech roles.", color: "text-purple-600", bg: "opacity-10" },
-              { icon: BarChart3, title: "Performance Tracking", desc: "Visualize your progress and pinpoint areas for consistent improvement.", color: "text-green-600", bg: "text-green-100/50", extra: Zap },
+              { icon: Mic, title: "AI Voice Analysis", desc: "Refine your tone and pace with AI-driven speech insights.", color: "text-yellow-600" },
+              { icon: Target, title: "Role-Specific Drills", desc: "Practice scenarios meticulously crafted for tech roles.", color: "text-yellow-600" },
+              { icon: BarChart3, title: "Performance Tracking", desc: "Visualize your progress and pinpoint areas for improvement.", color: "text-yellow-600" },
             ].map((feat, i) => (
-              <ScrollFadeIn key={i} delay={0.2 + i * 0.1}>
-                <motion.div 
-                  whileHover={{ y: -8 }}
-                  onTapStart={() => triggerHaptic(15)} // Vibrate when touching a card
-                  className="bg-[#fcfcfc] rounded-[32px] p-10 h-[320px] border border-gray-100 flex flex-col justify-between group relative overflow-hidden shadow-sm hover:shadow-lg transition-all"
-                >
-                  <feat.icon className={`${feat.color} w-12 h-12 mb-6 group-hover:scale-110 transition-transform`} />
+              <ScrollFadeIn key={i} delay={i * 0.1}>
+                <div className="bg-[#fcfcfc] rounded-[32px] p-10 h-full border border-gray-100 flex flex-col group hover:shadow-xl transition-all">
+                  <feat.icon className={`${feat.color} w-10 h-10 mb-6 group-hover:scale-110 transition-transform`} />
                   <h3 className="text-2xl font-bold mb-3 tracking-tight">{feat.title}</h3>
-                  <p className="text-[#636366] leading-relaxed">{feat.desc}</p>
-                  {feat.extra ? (
-                    <feat.extra size={100} className={`absolute bottom-4 right-4 ${feat.bg} group-hover:rotate-6 transition-transform`} />
-                  ) : (
-                    <Image src="/logo.png" alt="Card Logo" width={80} height={80} className={`absolute bottom-4 right-4 ${feat.bg} group-hover:opacity-20 transition-opacity`} />
-                  )}
-                </motion.div>
+                  <p className="text-[#636366] leading-relaxed text-sm font-medium">{feat.desc}</p>
+                </div>
               </ScrollFadeIn>
             ))}
           </div>
         </div>
       </section>
 
-      {/* 👥 Team Section */}
-      <section id="team" className="py-32 px-6 bg-white">
+      {/* Team Section */}
+      <section id="team" className="py-32 px-6 bg-white border-t border-gray-50 relative z-10">
         <div className="max-w-[1100px] mx-auto">
-          <ScrollFadeIn yOffset={50} delay={0.1}>
-            <h2 className="text-4xl md:text-6xl font-bold text-center tracking-tight mb-20">
+          <ScrollFadeIn>
+            <h2 className="text-4xl md:text-5xl font-bold text-center tracking-tight mb-20">
               The engineers behind <br /> your success.
             </h2>
           </ScrollFadeIn>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {teamMembers.map((member, i) => (
-              <ScrollFadeIn key={i} delay={i * 0.15}>
-                <motion.div 
-                  whileHover={{ y: -10, boxShadow: "0 20px 40px rgba(0,0,0,0.08)" }}
-                  onTapStart={() => triggerHaptic(12)}
-                  className="group flex flex-col p-6 bg-[#fcfcfc] rounded-[32px] border border-gray-100 transition-all duration-300 relative overflow-hidden"
-                >
-                  <div className="w-full aspect-[3/4] relative rounded-2xl overflow-hidden mb-6 border border-gray-200">
-                    <Image src={member.photo} alt={member.name} fill className="object-cover object-top grayscale group-hover:grayscale-0 transition-all duration-700 group-hover:scale-105" />
+              <ScrollFadeIn key={i} delay={i * 0.1}>
+                <div className="group flex flex-col p-6 bg-[#fcfcfc] rounded-[32px] border border-gray-100 transition-all hover:bg-white hover:shadow-xl shadow-sm">
+                  <div className="w-full aspect-[3/4] relative rounded-2xl overflow-hidden mb-6 border border-gray-100 grayscale group-hover:grayscale-0 transition-all duration-700">
+                    <Image src={member.photo} alt={member.name} fill className="object-cover object-top" />
                   </div>
-                  <p className="text-[11px] font-black text-[#0071e3] uppercase tracking-widest mb-1">{member.usn}</p>
+                  <p className="text-[10px] font-black text-yellow-600 uppercase tracking-widest mb-1">{member.usn}</p>
                   <h4 className="text-xl font-bold text-[#1d1d1f] mb-1 tracking-tight">{member.name}</h4>
-                  <p className="text-[#636366] text-sm font-medium mb-6">{member.role}</p>
+                  <p className="text-[#636366] text-xs font-semibold mb-6">{member.role}</p>
                   <div className="flex gap-4">
-                    <Link href={member.linkedin} target="_blank" onClick={() => triggerHaptic(10)} className="text-gray-400 hover:text-[#0077b5] transition-colors"><FaLinkedin size={22} /></Link>
-                    <Link href={member.github} target="_blank" onClick={() => triggerHaptic(10)} className="text-gray-400 hover:text-black transition-colors"><FaGithub size={22} /></Link>
+                    <Link href={member.linkedin} target="_blank" className="text-gray-400 hover:text-[#0077b5] transition-colors"><FaLinkedin size={20} /></Link>
+                    <Link href={member.github} target="_blank" className="text-gray-400 hover:text-black transition-colors"><FaGithub size={20} /></Link>
                   </div>
-                </motion.div>
+                </div>
               </ScrollFadeIn>
             ))}
           </div>
         </div>
       </section>
 
-      {/* 🏮 Footer */}
-      <footer className="bg-[#f5f5f7] pt-28 pb-12 px-6 border-t border-gray-200">
-        <div className="max-w-[1024px] mx-auto">
-          <div className="flex flex-col md:flex-row justify-between items-start gap-12 pb-12 border-b border-gray-200">
-            <div className="max-w-xs">
-              <div className="flex items-center gap-2 mb-6">
-                <Image src="/logo.png" alt="L" width={24} height={24} />
-                <span className="font-bold text-[17px]">Career Mock</span>
-              </div>
-              <p className="text-[13px] text-[#636366] leading-relaxed">Empowering developers with professional-grade interview intelligence.</p>
-            </div>
-            <div className="flex flex-col gap-4 text-[13px] text-[#1d1d1f] font-medium">
-               <span className="text-[#86868b] uppercase tracking-widest text-[11px]">Information</span>
-               <button onClick={() => { triggerHaptic(15); setIsPrivacyOpen(true); }} className="hover:underline text-left">Privacy Policy</button>
-               <Link href="/admin" onClick={() => triggerHaptic(15)} className="hover:underline">Admin Login</Link>
-            </div>
+      {/* Footer */}
+      <footer 
+        onContextMenu={handleContextMenu}
+        className="bg-white pt-28 pb-12 px-6 text-center border-t border-gray-50 relative z-10 cursor-default"
+      >
+        <div className="max-w-[1024px] mx-auto opacity-50 hover:opacity-100 transition-opacity">
+          <div className="flex items-center justify-center gap-2 mb-6">
+            <Image src="/logo.png" alt="Logo" width={24} height={24} />
+            <span className="font-bold text-sm tracking-tight text-[#1D1D1F]">Career Mock 2026</span>
           </div>
-          <div className="pt-8 flex flex-col md:flex-row justify-between items-center text-[12px] text-[#86868b] font-medium">
-            <p>Copyright © {new Date().getFullYear()} Career Mock. All rights reserved.</p>
-          </div>
+          <p className="text-[9px] font-medium text-gray-400 tracking-[0.4em] uppercase">Copyright © 2026. All systems operational.</p>
         </div>
-      </footer>
 
-      {/* 🔐 Privacy Modal */}
-      <Dialog open={isPrivacyOpen} onClose={() => setIsPrivacyOpen(false)} className="relative z-[200]">
-        <div className="fixed inset-0 bg-black/30 backdrop-blur-md" aria-hidden="true" />
-        <div className="fixed inset-0 flex items-center justify-center p-4">
-          <Dialog.Panel className="bg-white max-w-xl w-full rounded-[30px] p-10 shadow-2xl">
-            <Dialog.Title className="text-2xl font-bold mb-6 flex items-center gap-3">
-               <ShieldCheck className="text-[#0071e3]" size={28} /> Privacy Protocol
-            </Dialog.Title>
-            <div className="space-y-6 text-[#424245] text-[14px] leading-relaxed">
-              <p>Your session security is our priority. We utilize <strong>Supabase RLS</strong> to ensure your data is isolated.</p>
-            </div>
-            <Button 
-              onClick={() => {
-                triggerHaptic([10, 30, 10]); // Double pulse success haptic
-                setIsPrivacyOpen(false);
-              }} 
-              className="w-full mt-10 bg-[#0071e3] text-white rounded-full h-12 font-semibold shadow-md"
+        {/* Hidden Admin Context Menu */}
+        {adminMenu.visible && (
+          <div 
+            className="fixed z-[300] bg-white/90 backdrop-blur-md border border-gray-100 rounded-xl shadow-2xl p-1 animate-in fade-in zoom-in duration-200"
+            style={{ top: adminMenu.y, left: adminMenu.x }}
+          >
+            <button 
+              onClick={() => router.push('/admin')}
+              className="flex items-center gap-3 px-4 py-2 text-[12px] font-bold text-gray-700 hover:bg-gray-50 rounded-lg w-full transition-colors"
             >
-              Acknowledge
-            </Button>
-          </Dialog.Panel>
-        </div>
-      </Dialog>
+              <Lock size={14} className="text-yellow-600" /> Open Admin Portal
+            </button>
+          </div>
+        )}
+      </footer>
     </div>
   );
 }

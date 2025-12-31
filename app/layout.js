@@ -19,11 +19,13 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <head>
-        {/* Razorpay checkout script */}
+        {/* Razorpay */}
         <Script
           src="https://checkout.razorpay.com/v1/checkout.js"
           strategy="beforeInteractive"
         />
+
+        {/* Cloudflare Turnstile is managed by Supabase server-side — no client script */}
       </head>
 
       <body className={`${inter.variable} antialiased`}>

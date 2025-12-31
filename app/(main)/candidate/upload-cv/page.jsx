@@ -3,210 +3,184 @@ import { useState, useEffect } from 'react';
 import Dropzone from 'shadcn-dropzone';
 import { supabase } from '@/services/supabaseClient';
 import { toast } from 'sonner';
+import { 
+  FileText, 
+  Trash2, 
+  Download, 
+  Loader2, 
+  Upload,
+  ChevronLeft,
+  Eye
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Button } from "@/components/ui/button"; 
+import { useRouter } from 'next/navigation';
 
 export default function UploadCV() {
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState(null);
   const [uploadedFile, setUploadedFile] = useState(null);
+  const [previewUrl, setPreviewUrl] = useState(null);
 
-  // ✅ Fetch logged-in user and ensure they exist in `users` table
   useEffect(() => {
-    async function fetchUser() {
-      try {
-        const {
-          data: { session },
-          error: sessionError,
-        } = await supabase.auth.getSession();
-
-        if (sessionError || !session) {
-          toast.error('User not logged in');
-          return;
-        }
-
-        const userEmail = session.user.email;
-
-        // Check if user exists
-        const { data: userData, error: userError } = await supabase
-          .from('users')
-          .select('id, email, cv_file_path')
-          .eq('email', userEmail)
-          .single();
-
-        if (userError && userError.code === 'PGRST116') {
-          // Create the user automatically if they don't exist
-          const { data: newUser, error: insertError } = await supabase
-            .from('users')
-            .insert({ email: userEmail })
-            .select()
-            .single();
-
-          if (insertError) throw insertError;
-          setUser(newUser);
-        } else if (userError) {
-          console.error('User fetch error:', userError);
-          toast.error('Failed to load user data');
-        } else {
-          setUser(userData);
-        }
-      } catch (err) {
-        console.error('fetchUser error:', err);
-        toast.error('Unexpected error loading user');
-      }
-    }
-
     fetchUser();
   }, []);
 
-  // ✅ Handle file drop
-  const handleFileDrop = (files) => {
-    if (files.length > 0) {
-      setUploadedFile(files[0]);
-      console.log('Selected CV:', files[0]);
+  useEffect(() => {
+    if (user?.cv_file_path) {
+      getSignedUrl(user.cv_file_path);
+    } else {
+      setPreviewUrl(null);
     }
-  };
+  }, [user?.cv_file_path]);
 
-  // ✅ Handle submit
+  async function fetchUser() {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      const { data: userData } = await supabase
+        .from('users')
+        .select('id, email, name, cv_file_path')
+        .eq('email', session.user.email)
+        .single();
+      if (userData) setUser(userData);
+    } catch (err) { console.error(err); }
+  }
+
+  async function getSignedUrl(path) {
+    const { data } = await supabase.storage.from('cv-uploads').createSignedUrl(path, 3600);
+    if (data) setPreviewUrl(data.signedUrl);
+  }
+
+  const handleFileDrop = (files) => { if (files.length > 0) setUploadedFile(files[0]); };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (!uploadedFile) {
-      toast.error('Please upload your CV before submitting.');
-      return;
-    }
-    if (!user) {
-      toast.error('User not loaded yet.');
-      return;
-    }
-
     setLoading(true);
-
     try {
-      const fileExt = uploadedFile.name.split('.').pop();
-      const fileName = `cv.${fileExt}`;
-      const filePath = `cv/${user.id}/${fileName}`;
-
-      console.log('Uploading file to:', filePath);
-
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('cv-uploads')
-        .upload(filePath, uploadedFile, { upsert: true });
-
-      if (uploadError) throw uploadError;
-
-      console.log('Upload success:', uploadData);
-
-      // Update DB record
-      const { error: updateError } = await supabase
-        .from('users')
-        .update({ cv_file_path: filePath })
-        .eq('id', user.id);
-
-      if (updateError) throw updateError;
-
+      const filePath = `cv/${user.id}/cv_${Date.now()}.pdf`;
+      await supabase.storage.from('cv-uploads').upload(filePath, uploadedFile, { upsert: true });
+      await supabase.from('users').update({ cv_file_path: filePath }).eq('id', user.id);
       setUser({ ...user, cv_file_path: filePath });
       setUploadedFile(null);
-      toast.success('✅ CV uploaded successfully!');
-    } catch (error) {
-      console.error('Upload error details:', error);
-      toast.error(`Failed to upload CV: ${error.message || 'Unknown error'}`);
-    } finally {
-      setLoading(false);
-    }
+      toast.success('Sync Complete');
+    } catch (error) { toast.error('Error'); } 
+    finally { setLoading(false); }
   };
 
-  // ✅ Delete CV
   const handleDelete = async () => {
-    if (!user || !user.cv_file_path) return;
-
     setLoading(true);
     try {
-      const { error: deleteError } = await supabase.storage
-        .from('cv-uploads')
-        .remove([user.cv_file_path]);
-
-      if (deleteError) throw deleteError;
-
-      const { error: updateError } = await supabase
-        .from('users')
-        .update({ cv_file_path: null })
-        .eq('id', user.id);
-
-      if (updateError) throw updateError;
-
+      await supabase.storage.from('cv-uploads').remove([user.cv_file_path]);
+      await supabase.from('users').update({ cv_file_path: null }).eq('id', user.id);
       setUser({ ...user, cv_file_path: null });
-      toast.success('🗑️ CV deleted successfully.');
-    } catch (error) {
-      console.error('Delete error details:', error);
-      toast.error(`Failed to delete CV: ${error.message || 'Unknown error'}`);
-    } finally {
-      setLoading(false);
-    }
+      toast.success('CV Removed');
+    } catch (error) { toast.error('Error'); } 
+    finally { setLoading(false); }
   };
 
+  if (!user) return <div className="flex h-screen items-center justify-center bg-white"><Loader2 className="animate-spin" /></div>;
+
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto bg-white p-8 rounded-xl shadow-md">
-        <h1 className="text-2xl font-bold text-gray-900 mb-6">Settings</h1>
+    <div className="flex flex-col h-screen bg-white text-[#1D1D1F] antialiased">
+      
+      {/* --- Simple Mobile Header --- */}
+      <nav className="flex items-center justify-between px-6 py-4 border-b border-gray-50">
+        <button onClick={() => router.back()} className="p-2 -ml-2 hover:bg-gray-50 rounded-full transition-colors">
+          <ChevronLeft className="w-6 h-6" />
+        </button>
+        <h1 className="text-sm font-bold uppercase tracking-widest text-gray-400">Manage Resume</h1>
+        <div className="w-8" /> 
+      </nav>
 
-        {!user ? (
-          <p>Loading user...</p>
-        ) : user.cv_file_path ? (
-          <div>
-            <div className="flex items-center gap-3 mb-4">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-6 w-6 text-indigo-600"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M7 16V4a1 1 0 011-1h8a1 1 0 011 1v12m-4 4h-4m4 0a2 2 0 004-2m-4 2a2 2 0 01-4-2"
+      <div className="flex-1 overflow-hidden flex flex-col p-6">
+        <AnimatePresence mode="wait">
+          {user.cv_file_path ? (
+            <motion.div 
+              key="viewer"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="flex flex-col h-full gap-6"
+            >
+              {/* User Label */}
+              <div className="flex items-end justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold tracking-tight">{user.name}&apos;s CV</h2>
+                  <p className="text-xs font-medium text-blue-600">Active on your profile</p>
+                </div>
+                <Eye className="w-5 h-5 text-gray-300" />
+              </div>
+
+              {/* PDF Preview Area */}
+              <div className="flex-1 bg-gray-100 rounded-2xl overflow-hidden border border-gray-100 shadow-inner">
+                {previewUrl ? (
+                  <iframe src={`${previewUrl}#toolbar=0`} className="w-full h-full border-none" />
+                ) : (
+                  <div className="flex items-center justify-center h-full"><Loader2 className="animate-spin text-gray-300" /></div>
+                )}
+              </div>
+
+              {/* Action Buttons - Pinned to bottom */}
+              <div className="flex gap-3 pt-2">
+                <Button 
+                  variant="outline" 
+                  onClick={() => window.open(previewUrl, '_blank')}
+                  className="flex-1 h-14 rounded-2xl border-gray-200 font-bold"
+                >
+                  <Download className="w-4 h-4 mr-2" /> Download
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  onClick={handleDelete}
+                  className="h-14 w-14 rounded-2xl bg-red-50 text-red-600 hover:bg-red-100 p-0"
+                >
+                  <Trash2 className="w-5 h-5" />
+                </Button>
+              </div>
+            </motion.div>
+          ) : (
+            <motion.div 
+              key="uploader"
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="flex flex-col h-full justify-center text-center space-y-8"
+            >
+              <div className="space-y-2">
+                <h2 className="text-3xl font-bold tracking-tight">Upload Resume</h2>
+                <p className="text-gray-500 font-medium">Add a PDF to start matching with AI roles.</p>
+              </div>
+
+              <div className="relative group">
+                <Dropzone
+                  onDropAccepted={handleFileDrop}
+                  accept={{ 'application/pdf': ['.pdf'] }}
+                  maxFiles={1}
+                  className="h-64 rounded-3xl border-2 border-dashed border-gray-200 bg-gray-50 flex flex-col items-center justify-center gap-4 transition-all hover:bg-blue-50 hover:border-blue-200"
                 />
-              </svg>
-              <span className="text-gray-800 font-medium">CV Uploaded</span>
-            </div>
+                {!uploadedFile ? (
+                  <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-gray-400">
+                    <Upload className="w-10 h-10 mb-2" />
+                    <span className="font-bold text-sm">Select PDF</span>
+                  </div>
+                ) : (
+                  <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-blue-600">
+                    <FileText className="w-10 h-10 mb-2" />
+                    <span className="font-bold text-sm truncate max-w-[200px]">{uploadedFile.name}</span>
+                  </div>
+                )}
+              </div>
 
-            <button
-              onClick={handleDelete}
-              disabled={loading}
-              className="py-2 px-4 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50"
-            >
-              {loading ? 'Deleting...' : 'Delete CV'}
-            </button>
-          </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Upload your CV (PDF)
-              </label>
-
-              <Dropzone
-                onDropAccepted={handleFileDrop}
-                accept={{ 'application/pdf': ['.pdf'] }}
-                maxFiles={1}
-              />
-
-              {uploadedFile && (
-                <p className="text-sm text-green-600 mt-2">
-                  Selected file: {uploadedFile.name}
-                </p>
-              )}
-            </div>
-
-            <button
-              type="submit"
-              className="w-full py-2 px-4 bg-indigo-600 text-white font-medium rounded-md shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-              disabled={loading}
-            >
-              {loading ? 'Uploading...' : 'Upload CV'}
-            </button>
-          </form>
-        )}
+              <Button
+                onClick={handleSubmit}
+                disabled={loading || !uploadedFile}
+                className="w-full h-16 rounded-2xl bg-[#1D1D1F] text-white font-bold text-lg transition-transform active:scale-95"
+              >
+                {loading ? 'Processing...' : 'Upload Now'}
+              </Button>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );

@@ -1,12 +1,14 @@
 "use client";
 import { useUser } from "@/app/provider";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import axios from "axios";
-import { Loader2Icon, PlusIcon, Trash2Icon } from "lucide-react";
+import { Loader2Icon, PlusIcon, Trash2Icon, Sparkles, CreditCard, ChevronRight } from "lucide-react";
 import React, { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { v4 as uuidv4 } from "uuid";
 import { supabase } from "@/services/supabaseClient";
+import { motion, AnimatePresence } from "framer-motion";
 
 function QuestionList({ formData, onCreateLink }) {
   const [loading, setLoading] = useState(true);
@@ -17,14 +19,8 @@ function QuestionList({ formData, onCreateLink }) {
   const { user, updateUserCredits } = useUser();
   const hasCalled = useRef(false);
 
-  // Debugging useEffect - logs whenever questionList changes
-  useEffect(() => {
-    console.log("Current questionList state:", questionList);
-  }, [questionList]);
-
   useEffect(() => {
     if (formData && !hasCalled.current) {
-      console.log("Initial formData received:", formData);
       GenerateQuestionList();
     }
   }, [formData]);
@@ -33,277 +29,205 @@ function QuestionList({ formData, onCreateLink }) {
     setLoading(true);
     hasCalled.current = true;
     try {
-      console.log("Making API call to generate questions...");
-      const result = await axios.post("/api/ai-model", {
-        ...formData,
-      });
-
-      console.log("API response received:", result.data);
-
+      const result = await axios.post("/api/ai-model", { ...formData });
       const rawContent = result?.data?.content || result?.data?.Content;
-
       if (!rawContent) {
-        toast("Invalid response format");
-        console.error('Missing "content" or "Content" field in response');
+        toast.error("Invalid response format");
         return;
       }
-
       const match = rawContent.match(/```json\s*([\s\S]*?)\s*```/);
-
       if (!match || !match[1]) {
-        toast("Failed to extract question list");
-        console.error("No valid JSON block found in response");
+        toast.error("Failed to extract questions");
         return;
       }
-
       const parsedData = JSON.parse(match[1].trim());
-      console.log("Parsed question data:", parsedData);
       setQuestionList(parsedData);
     } catch (e) {
-      toast("Server Error, Try Again");
-      console.error("Error generating questions:", e);
+      toast.error("AI Generation failed. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
   const handleAddQuestion = () => {
-    if (!newQuestion.trim()) {
-      toast("Please enter a question");
-      return;
-    }
-
-    console.log("Attempting to add new question:", {
-      question: newQuestion,
-      type: newQuestionType
-    });
-
-    setQuestionList(prev => {
-      if (!prev || !prev.interviewQuestions) {
-        console.error("Invalid previous state:", prev);
-        return prev;
-      }
-
-      const newQuestionObj = {
-        question: newQuestion,
-        type: newQuestionType
-      };
-
-      const newState = {
-        ...prev,
-        interviewQuestions: [...prev.interviewQuestions, newQuestionObj]
-      };
-
-      console.log("New state after addition:", newState);
-      return newState;
-    });
-
+    if (!newQuestion.trim()) return;
+    setQuestionList(prev => ({
+      ...prev,
+      interviewQuestions: [...prev.interviewQuestions, { question: newQuestion, type: newQuestionType }]
+    }));
     setNewQuestion("");
-    setNewQuestionType("behavioral");
-    toast("Question added successfully");
+    toast.success("Question added");
   };
 
   const handleDeleteQuestion = (index) => {
-    console.log("Attempting to delete question at index:", index);
-
     setQuestionList(prev => {
-      if (!prev || !prev.interviewQuestions || index >= prev.interviewQuestions.length) {
-        console.error("Invalid deletion index or state:", { index, state: prev });
-        return prev;
-      }
-
-      const updatedQuestions = [...prev.interviewQuestions];
-      updatedQuestions.splice(index, 1);
-
-      const newState = {
-        ...prev,
-        interviewQuestions: updatedQuestions
-      };
-
-      console.log("New state after deletion:", newState);
-      return newState;
+      const updated = [...prev.interviewQuestions];
+      updated.splice(index, 1);
+      return { ...prev, interviewQuestions: updated };
     });
-
-    toast("Question deleted successfully");
+    toast.success("Question removed");
   };
 
   const onFinish = async () => {
     setSaveLoading(true);
     const interview_id = uuidv4();
-
-    console.log("Final question list being saved:", questionList);
-    console.log("Form data being saved:", formData);
-
     try {
-      // First, deduct credit from user
       const currentCredits = user?.credits || 0;
       if (currentCredits <= 0) {
-        toast.error("You don't have enough credits to create an interview");
+        toast.error("Insufficient credits");
         setSaveLoading(false);
         return;
       }
 
-      const newCredits = currentCredits - 1;
-      const creditUpdateResult = await updateUserCredits(newCredits);
-
+      const creditUpdateResult = await updateUserCredits(currentCredits - 1);
       if (!creditUpdateResult.success) {
-        toast.error("Failed to deduct credit. Please try again.");
+        toast.error("Credit deduction failed");
         setSaveLoading(false);
         return;
       }
 
-      // Then create the interview
-      const { data, error } = await supabase
-        .from("interviews")
-        .insert([
-          {
-            interview_id,
-            userEmail: user?.email,
-            jobposition: formData.jobPosition,
-            jobdescription: formData.jobDescription,
-            duration: formData.duration,
-            type: formData.type,
-            questionlist: questionList, // jsonb ✅
-          },
-        ])
-        .select();
+      const { error } = await supabase.from("interviews").insert([{
+        interview_id,
+        userEmail: user?.email,
+        jobposition: formData.jobPosition,
+        jobdescription: formData.jobDescription,
+        duration: formData.duration,
+        type: formData.type,
+        questionlist: questionList,
+      }]);
 
-      if (error) {
-        console.error("Supabase Insert Error:", error);
-      } else {
-        console.log("Inserted successfully:", data);
-      }
+      if (error) throw error;
 
-
-      console.log("Supabase insert result:", { data, error });
-
-      setSaveLoading(false);
       onCreateLink(interview_id);
-
-      if (error) {
-        toast("Failed to save interview");
-        console.error("Supabase error:", error);
-        // Revert credit deduction if interview creation failed
-        await updateUserCredits(currentCredits);
-      } else {
-        toast.success(`Interview saved successfully! Credit deducted. You now have ${newCredits} credits remaining.`);
-      }
+      toast.success("Interview published successfully");
     } catch (e) {
-      console.error("Error saving interview:", e);
-      toast("Error saving interview");
+      toast.error("Failed to save interview");
+    } finally {
       setSaveLoading(false);
     }
   };
 
   return (
-    <div>
-      {loading && (
-        <div className="flex flex-col items-center gap-4 mt-10">
-          <Loader2Icon className="animate-spin w-6 h-6 text-blue-500" />
-          <div className="p-5 bg-blue-50 rounded-xl border border-gray-100 flex flex-col gap-2 items-center text-center">
-            <h2 className="font-semibold text-lg">
-              Generating Interview Questions
-            </h2>
-            <p className="text-sm text-gray-600">
-              Our AI is crafting personalized questions based on your job position
-            </p>
-          </div>
-        </div>
-      )}
+    <div className="max-w-4xl mx-auto px-4 pb-20">
+      <AnimatePresence>
+        {loading && (
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex flex-col items-center justify-center py-20 gap-6"
+          >
+            <div className="relative">
+              <Loader2Icon className="animate-spin w-12 h-12 text-[#0071E3] opacity-20" />
+              <Sparkles className="absolute inset-0 m-auto w-6 h-6 text-[#0071E3] animate-pulse" />
+            </div>
+            <div className="text-center space-y-2">
+              <h2 className="text-2xl font-bold tracking-tight text-[#1D1D1F]">Crafting Assessment</h2>
+              <p className="text-[#86868B] max-w-sm">Our AI is analyzing the role requirements to generate personalized questions.</p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      {!loading && questionList && questionList.interviewQuestions && (
-        <div className="mt-10">
-          <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">
-            Generated Questions
-          </h2>
-
-          {/* Credit Info */}
-          <div className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-blue-800">Credits Remaining:</span>
-                <span className="text-lg font-bold text-blue-600">{user?.credits || 0}</span>
+      {!loading && questionList?.interviewQuestions && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8">
+          
+          {/* Header & Credits */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#F5F5F7] pb-8">
+            <div>
+              <h2 className="text-3xl font-bold tracking-tight text-[#1D1D1F]">Review Questions</h2>
+              <p className="text-[#86868B]">Edit or add custom questions before finalizing.</p>
+            </div>
+            
+            <div className="bg-white/50 backdrop-blur-md border border-[#D2D2D7]/50 rounded-2xl p-4 flex items-center gap-4 shadow-sm">
+              <div className="p-2 bg-blue-50 rounded-xl text-[#0071E3]">
+                <CreditCard className="w-5 h-5" />
               </div>
-              <div className="text-sm text-blue-600">
-                Cost: 1 Credit
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-[#86868B]">Available Credits</p>
+                <p className="text-lg font-bold text-[#1D1D1F]">{user?.credits || 0} <span className="text-sm font-normal text-[#86868B]">(-1 per link)</span></p>
               </div>
             </div>
           </div>
 
-          {/* Add Question Form */}
-          <div className="mb-8 p-4 bg-gray-50 rounded-lg border border-gray-200">
-            <h3 className="font-medium mb-3">Add Custom Question</h3>
+          {/* Add Question Field */}
+          <div className="bg-[#F5F5F7]/50 rounded-[24px] p-6 border border-white space-y-4">
+            <h3 className="text-sm font-bold uppercase tracking-widest text-[#86868B] flex items-center gap-2">
+              <PlusIcon className="w-4 h-4" /> Add Custom Entry
+            </h3>
             <div className="flex flex-col sm:flex-row gap-3">
-              <input
-                type="text"
+              <Input
                 value={newQuestion}
                 onChange={(e) => setNewQuestion(e.target.value)}
-                placeholder="Enter your question"
-                className="flex-1 p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                placeholder="Type your own question here..."
+                className="flex-1 h-12 rounded-xl bg-white border-none shadow-sm focus-visible:ring-1 focus-visible:ring-[#0071E3]"
               />
               <select
                 value={newQuestionType}
                 onChange={(e) => setNewQuestionType(e.target.value)}
-                className="p-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                className="h-12 px-4 rounded-xl bg-white border-none shadow-sm text-sm font-medium focus:ring-1 focus:ring-[#0071E3] outline-none"
               >
                 <option value="behavioral">Behavioral</option>
                 <option value="technical">Technical</option>
                 <option value="situational">Situational</option>
-                <option value="cultural">Cultural Fit</option>
               </select>
-              <Button
-                onClick={handleAddQuestion}
-                className="flex items-center gap-1"
-              >
-                <PlusIcon className="w-4 h-4" />
-                Add Question
+              <Button onClick={handleAddQuestion} className="h-12 px-6 rounded-xl bg-[#0071E3] hover:bg-[#0077ED] shadow-lg shadow-blue-500/20 active:scale-95 transition-all">
+                Add
               </Button>
             </div>
           </div>
 
-          {/* Questions List */}
-          <div className="space-y-4">
+          {/* Question Cards */}
+          <div className="grid gap-4">
             {questionList.interviewQuestions.map((item, index) => (
-              <div
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.05 }}
                 key={index}
-                className="p-4 border rounded-lg bg-white shadow-sm flex justify-between items-start"
+                className="group relative bg-white border border-[#D2D2D7]/30 rounded-[22px] p-6 transition-all hover:shadow-xl hover:shadow-black/5"
               >
-                <div>
-                  <p className="font-medium">
-                    {index + 1}. {item.question}
-                  </p>
-                  <p className="text-sm text-primary">Type: {item.type}</p>
+                <div className="flex justify-between items-start gap-4">
+                  <div className="space-y-2">
+                    <span className="text-[10px] font-bold text-[#0071E3] uppercase tracking-widest bg-blue-50 px-2 py-1 rounded-md">
+                      {item.type}
+                    </span>
+                    <p className="text-lg font-semibold leading-tight text-[#1D1D1F]">
+                      {item.question}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => handleDeleteQuestion(index)}
+                    className="opacity-0 group-hover:opacity-100 p-2 text-[#FF3B30] hover:bg-red-50 rounded-full transition-all"
+                  >
+                    <Trash2Icon className="w-5 h-5" />
+                  </button>
                 </div>
-                <button
-                  onClick={() => handleDeleteQuestion(index)}
-                  className="text-red-500 hover:text-red-700 p-1 rounded-full hover:bg-red-50"
-                  aria-label="Delete question"
-                >
-                  <Trash2Icon className="w-4 h-4" />
-                </button>
-              </div>
+              </motion.div>
             ))}
           </div>
 
-          <div className="flex justify-end mt-10">
+          {/* Action Footer */}
+          <div className="flex flex-col items-center gap-4 pt-10 border-t border-[#F5F5F7]">
             <Button
               onClick={onFinish}
               disabled={saveLoading || (user?.credits || 0) <= 0}
-              className={user?.credits <= 0 ? "bg-gray-400 cursor-not-allowed" : ""}
+              className="w-full sm:w-auto min-w-[300px] h-14 rounded-full bg-[#1D1D1F] text-white font-bold text-lg hover:bg-black shadow-xl active:scale-95 transition-all disabled:opacity-30"
             >
               {saveLoading ? (
-                <>
-                  <Loader2Icon className="animate-spin w-4 h-4 mr-2" />
-                  Saving...
-                </>
-              ) : user?.credits <= 0 ? (
-                "No Credits Available"
+                <Loader2Icon className="animate-spin w-5 h-5" />
               ) : (
-                "Create Interview Link & Finish"
+                <span className="flex items-center gap-2">
+                  Generate Link & Finalize <ChevronRight className="w-5 h-5" />
+                </span>
               )}
             </Button>
+            {(user?.credits || 0) <= 0 && (
+              <p className="text-[#FF3B30] text-xs font-bold uppercase tracking-widest animate-pulse">
+                Insufficient Credits to finish
+              </p>
+            )}
           </div>
-        </div>
+        </motion.div>
       )}
     </div>
   );
