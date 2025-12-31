@@ -36,7 +36,7 @@ const ScrollFadeIn = ({ children, delay = 0, duration = 0.8, yOffset = 30 }) => 
 
 export default function CareerMockLanding() {
   const router = useRouter();
-  const isUpdating = false; 
+  const isUpdating = true; 
 
   if (isUpdating) {
     return <Maintenance />;
