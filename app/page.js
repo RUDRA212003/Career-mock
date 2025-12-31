@@ -11,10 +11,16 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 
+// --- HAPTIC FEEDBACK UTILITY ---
+const triggerHaptic = (pattern = 40) => {
+  if (typeof window !== "undefined" && window.navigator && window.navigator.vibrate) {
+    window.navigator.vibrate(pattern);
+  }
+};
+
 // --- PREMIUM GOLD & SILVER PAPER BLAST ---
 const PremiumGoldConfetti = () => {
   const pieces = Array.from({ length: 90 });
-  // Standard Premium Palette: Deep Gold, Champagne, Silver, White
   const colors = ["#D4AF37", "#F1E5AC", "#C0C0C0", "#FFFFFF", "#B8860B"];
   
   return (
@@ -25,13 +31,6 @@ const PremiumGoldConfetti = () => {
         const targetX = Math.cos(angle) * velocity;
         const targetY = Math.sin(angle) * velocity - 25; 
 
-<<<<<<< HEAD
-// --- HAPTIC FEEDBACK UTILITY ---
-const triggerHaptic = (pattern = 40) => {
-  if (typeof window !== "undefined" && window.navigator && window.navigator.vibrate) {
-    window.navigator.vibrate(pattern);
-  }
-=======
         return (
           <motion.div
             key={i}
@@ -60,7 +59,6 @@ const triggerHaptic = (pattern = 40) => {
       })}
     </div>
   );
->>>>>>> c26d2ed (2026 update)
 };
 
 const ScrollFadeIn = ({ children, delay = 0, duration = 0.8, yOffset = 30 }) => (
@@ -108,7 +106,6 @@ export default function CareerMockLanding() {
   return (
     <div className="bg-white text-[#1d1d1f] font-sans antialiased relative selection:bg-yellow-100 overflow-x-hidden">
       
-      {/* 🎊 PREMIUM GOLD BLAST */}
       <PremiumGoldConfetti />
 
       {/* Navigation */}
@@ -121,7 +118,7 @@ export default function CareerMockLanding() {
           <div className="hidden md:flex items-center gap-8 text-[13px] font-normal text-[#424245]">
             <a href="#features" className="hover:text-yellow-600 transition-colors font-medium">Features</a>
             <a href="#team" className="hover:text-yellow-600 transition-colors font-medium">Our Team</a>
-            <Button onClick={() => router.push("/login")} className="bg-black text-white text-[12px] px-5 py-0 h-8 rounded-full font-medium shadow-lg active:scale-95 transition-all">
+            <Button onClick={() => { triggerHaptic(); router.push("/login"); }} className="bg-black text-white text-[12px] px-5 py-0 h-8 rounded-full font-medium shadow-lg active:scale-95 transition-all">
               Start Session
             </Button>
           </div>
@@ -154,14 +151,14 @@ export default function CareerMockLanding() {
             <p className="text-lg md:text-xl text-gray-500 font-medium max-w-2xl mx-auto mb-10 leading-relaxed italic">
               Hope this year brings you the career success you deserve.
             </p>
-            <Button onClick={() => router.push("/login")} size="lg" className="h-16 px-10 rounded-full bg-black hover:bg-yellow-600 text-white font-bold text-lg tracking-tight shadow-xl transition-colors">
+            <Button onClick={() => { triggerHaptic(50); router.push("/login"); }} size="lg" className="h-16 px-10 rounded-full bg-black hover:bg-yellow-600 text-white font-bold text-lg tracking-tight shadow-xl transition-colors">
                 Initialize Career 2026 <ChevronRight className="ml-2" />
             </Button>
           </ScrollFadeIn>
         </div>
       </section>
 
-      {/* Updated Offer Section with Button */}
+      {/* Offer Section */}
       <section className="py-20 px-6 relative z-10">
         <div className="max-w-4xl mx-auto">
           <ScrollFadeIn>
@@ -172,8 +169,6 @@ export default function CareerMockLanding() {
                 </div>
                 <h2 className="text-5xl font-bold tracking-tight text-[#1D1D1F]">2+0+2+6 <br /><span className="text-yellow-600">OFFER</span></h2>
                 <p className="text-gray-500 font-medium max-w-xs leading-snug">Unlock your potential with a 10% discount throughout Jan 2026.</p>
-                
-                {/* NEW REDIRECT BUTTON */}
                 <Button 
                   onClick={() => router.push('/recruiter/billing')}
                   className="mt-4 bg-yellow-600 hover:bg-yellow-700 text-white rounded-xl px-6 h-12 font-bold flex items-center gap-2 shadow-lg shadow-yellow-600/20 active:scale-95 transition-all"
@@ -248,10 +243,7 @@ export default function CareerMockLanding() {
       </section>
 
       {/* Footer */}
-      <footer 
-        onContextMenu={handleContextMenu}
-        className="bg-white pt-28 pb-12 px-6 text-center border-t border-gray-50 relative z-10 cursor-default"
-      >
+      <footer onContextMenu={handleContextMenu} className="bg-white pt-28 pb-12 px-6 text-center border-t border-gray-50 relative z-10 cursor-default">
         <div className="max-w-[1024px] mx-auto opacity-50 hover:opacity-100 transition-opacity">
           <div className="flex items-center justify-center gap-2 mb-6">
             <Image src="/logo.png" alt="Logo" width={24} height={24} />
@@ -260,16 +252,9 @@ export default function CareerMockLanding() {
           <p className="text-[9px] font-medium text-gray-400 tracking-[0.4em] uppercase">Copyright © 2026. All systems operational.</p>
         </div>
 
-        {/* Hidden Admin Context Menu */}
         {adminMenu.visible && (
-          <div 
-            className="fixed z-[300] bg-white/90 backdrop-blur-md border border-gray-100 rounded-xl shadow-2xl p-1 animate-in fade-in zoom-in duration-200"
-            style={{ top: adminMenu.y, left: adminMenu.x }}
-          >
-            <button 
-              onClick={() => router.push('/admin')}
-              className="flex items-center gap-3 px-4 py-2 text-[12px] font-bold text-gray-700 hover:bg-gray-50 rounded-lg w-full transition-colors"
-            >
+          <div className="fixed z-[300] bg-white/90 backdrop-blur-md border border-gray-100 rounded-xl shadow-2xl p-1 animate-in fade-in zoom-in duration-200" style={{ top: adminMenu.y, left: adminMenu.x }}>
+            <button onClick={() => router.push('/admin')} className="flex items-center gap-3 px-4 py-2 text-[12px] font-bold text-gray-700 hover:bg-gray-50 rounded-lg w-full transition-colors">
               <Lock size={14} className="text-yellow-600" /> Open Admin Portal
             </button>
           </div>
