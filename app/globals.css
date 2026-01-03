@@ -244,3 +244,12 @@ section.snap {
   0% { background-position: 0% 50%; }
   100% { background-position: 100% 50%; }
 }
+@keyframes wave {
+  0% { height: 4px; }
+  50% { height: 20px; }
+  100% { height: 4px; }
+}
+
+.animate-wave {
+  animation: wave 1s infinite ease-in-out;
+}

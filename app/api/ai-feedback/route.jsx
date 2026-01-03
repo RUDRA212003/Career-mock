@@ -4,27 +4,47 @@ import { NextResponse } from "next/server";
 import OpenAI from "openai";
 
 export async function POST(req) {
-  const { conversation } = await req.json();
-  const FINAL_PROMPT = FEEDBACK_PROMPT.replace(
-    "{{conversation}}",
-    JSON.stringify(conversation)
-  );
-
   try {
+    const { conversation } = await req.json();
+
+    if (!conversation) {
+      return NextResponse.json(
+        { error: "Conversation missing" },
+        { status: 400 }
+      );
+    }
+
+    const FINAL_PROMPT = FEEDBACK_PROMPT.replace(
+      "{{conversation}}",
+      JSON.stringify(conversation)
+    );
+
     const openai = new OpenAI({
       baseURL: "https://openrouter.ai/api/v1",
       apiKey: process.env.OPENROUTER_API_KEY,
     });
 
     const completion = await openai.chat.completions.create({
-      model: "deepseek/deepseek-r1-0528-qwen3-8b:free",
-      messages: [{ role: "user", content: FINAL_PROMPT }],
-      //   response_format: "json",
+      model: "deepseek/deepseek-r1",
+      messages: [
+        {
+          role: "user",
+          content: FINAL_PROMPT,
+        },
+      ],
     });
-    console.log(completion.choices[0].message);
-    return NextResponse.json(completion.choices[0].message);
+
+    const feedbackText =
+      completion?.choices?.[0]?.message?.content || "";
+
+    return NextResponse.json({
+      content: feedbackText, // ✅ IMPORTANT
+    });
   } catch (error) {
-    console.log(error);
-    return NextResponse.json(error);
+    console.error("AI Feedback Error:", error);
+    return NextResponse.json(
+      { error: "Feedback generation failed" },
+      { status: 500 }
+    );
   }
 }
