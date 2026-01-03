@@ -24,16 +24,29 @@ function CreateOptions() {
       result += chars.charAt(Math.floor(Math.random() * chars.length));
     }
     setCaptchaCode(result);
-    setUserCaptchaInput(""); // Reset input on new captcha
+    setUserCaptchaInput(""); 
   };
 
   useEffect(() => {
     generateCaptcha();
   }, []);
 
+  /**
+   * Helper to extract UUID from a string/URL
+   * Matches standard UUID v4 pattern
+   */
+  const extractUUID = (input) => {
+    const uuidPattern = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
+    const match = input.match(uuidPattern);
+    return match ? match[0] : input.trim();
+  };
+
   const handleStart = async () => {
-    if (!code.trim()) {
-      toast.error('Please enter an interview code.')
+    // 1. Extract the UUID from pasted link or plain text
+    const cleanUUID = extractUUID(code);
+
+    if (!cleanUUID) {
+      toast.error('Please enter a valid interview code or link.')
       return
     }
 
@@ -44,30 +57,27 @@ function CreateOptions() {
 
     setLoading(true)
 
+    // 2. Verify against database using the extracted UUID
     const { data, error } = await supabase
       .from('interviews')
       .select('interview_id')
-      .eq('interview_id', code.trim())
+      .eq('interview_id', cleanUUID)
       .single()
 
     setLoading(false)
 
     if (error || !data) {
-      toast.error('Invalid interview code. Please try again.')
-      generateCaptcha(); // Refresh captcha on failure
+      toast.error('Invalid interview link or code. Please check and try again.')
+      generateCaptcha(); 
       return
     }
 
-    toast.success('Redirecting to your interview...')
+    toast.success('Interview verified. Redirecting...')
 
-    const baseUrl = process.env.NEXT_PUBLIC_HOST_URL || ''
-    const redirectUrl = `${baseUrl}/${code.trim()}`
-
-    if (typeof window !== 'undefined') {
-      window.location.href = redirectUrl
-    } else {
-      router.push(redirectUrl)
-    }
+    // 3. Construct the local route
+    // This will redirect to /interview/[id] inside your application
+    const redirectUrl = `/interview/${cleanUUID}`;
+    router.push(redirectUrl);
   }
 
   return (
@@ -83,8 +93,8 @@ function CreateOptions() {
             <Key className="h-6 w-6" />
           </div>
           <div>
-            <h2 className="text-xl font-bold tracking-tight text-[#1D1D1F]">Interview Code</h2>
-            <p className="text-xs font-semibold text-[#86868B] uppercase tracking-widest">Entry Key Required</p>
+            <h2 className="text-xl font-bold tracking-tight text-[#1D1D1F]">Interview Link</h2>
+            <p className="text-xs font-semibold text-[#86868B] uppercase tracking-widest">Pasted Key Required</p>
           </div>
         </div>
 
@@ -93,7 +103,7 @@ function CreateOptions() {
             <Input
               value={code}
               onChange={(e) => setCode(e.target.value)}
-              placeholder="Paste UUID Code"
+              placeholder="Paste Interview Link or Code"
               className="h-14 rounded-2xl border-gray-200 bg-[#F5F5F7]/50 px-5 text-[15px] font-medium focus:bg-white focus:ring-1 focus:ring-[#0071E3] transition-all placeholder:text-gray-400 shadow-inner"
             />
           </div>
@@ -113,12 +123,11 @@ function CreateOptions() {
             
             <div className="flex gap-2">
               <div className="flex-1 h-12 bg-slate-900 rounded-xl flex items-center justify-center select-none overflow-hidden relative border border-slate-800">
-                 {/* Visual Noise for Captcha */}
-                 <div className="absolute inset-0 opacity-20 pointer-events-none" 
-                      style={{backgroundImage: 'radial-gradient(#0071E3 1px, transparent 0)', backgroundSize: '4px 4px'}}></div>
-                 <span className="text-white font-black italic tracking-[0.4em] text-lg skew-x-12 line-through decoration-[#0071E3]/50">
+                  <div className="absolute inset-0 opacity-20 pointer-events-none" 
+                       style={{backgroundImage: 'radial-gradient(#0071E3 1px, transparent 0)', backgroundSize: '4px 4px'}}></div>
+                  <span className="text-white font-black italic tracking-[0.4em] text-lg skew-x-12 line-through decoration-[#0071E3]/50">
                     {captchaCode}
-                 </span>
+                  </span>
               </div>
               
               <Input
@@ -132,7 +141,7 @@ function CreateOptions() {
           </div>
 
           <p className="text-[#86868B] text-[13px] font-medium leading-relaxed px-1">
-            Standard 36-character UUID provided by your hiring manager.
+            You can paste the full invitation URL or just the unique ID key.
           </p>
 
           <Button
@@ -169,16 +178,7 @@ function CreateOptions() {
             </div>
 
             <p className="text-[#86868B] text-base leading-relaxed font-medium">
-              Upload your{" "}
-              <span className="relative text-[#0071E3] font-semibold group cursor-pointer">
-                resume
-                <span className="absolute left-0 -bottom-1 h-[2px] w-0 bg-[#0071E3] transition-all duration-300 group-hover:w-full"></span>
-              </span>{" "}
-              to make it visible to{" "}
-              <span className="relative text-[#0071E3] font-semibold group cursor-pointer">
-                recruiters
-                <span className="absolute left-0 -bottom-1 h-[2px] w-0 bg-[#0071E3] transition-all duration-300 group-hover:w-full"></span>
-              </span>.
+              Upload your resume to enhance your AI profile and matching results.
             </p>
           </div>
 

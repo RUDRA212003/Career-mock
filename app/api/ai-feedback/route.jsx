@@ -9,14 +9,16 @@ export async function POST(req) {
 
     if (!conversation) {
       return NextResponse.json(
-        { error: "Conversation missing" },
+        { error: "No conversation provided" },
         { status: 400 }
       );
     }
 
     const FINAL_PROMPT = FEEDBACK_PROMPT.replace(
       "{{conversation}}",
-      JSON.stringify(conversation)
+      typeof conversation === "string"
+        ? conversation
+        : JSON.stringify(conversation)
     );
 
     const openai = new OpenAI({
@@ -25,23 +27,31 @@ export async function POST(req) {
     });
 
     const completion = await openai.chat.completions.create({
-      model: "deepseek/deepseek-r1",
+      model: "openai/gpt-4o-mini", // ✅ STABLE & WORKING
       messages: [
+        {
+          role: "system",
+          content:
+            "You are an interview evaluator. Return structured, clear feedback.",
+        },
         {
           role: "user",
           content: FINAL_PROMPT,
         },
       ],
+      temperature: 0.3,
     });
 
-    const feedbackText =
-      completion?.choices?.[0]?.message?.content || "";
+    const feedback = completion.choices?.[0]?.message?.content;
 
-    return NextResponse.json({
-      content: feedbackText, // ✅ IMPORTANT
-    });
+    if (!feedback) {
+      throw new Error("Empty feedback from LLM");
+    }
+
+    return NextResponse.json({ content: feedback });
   } catch (error) {
-    console.error("AI Feedback Error:", error);
+    console.error("🔥 AI FEEDBACK ERROR:", error);
+
     return NextResponse.json(
       { error: "Feedback generation failed" },
       { status: 500 }
