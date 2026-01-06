@@ -75,6 +75,7 @@ function InterviewDetail() {
       <CandidateList
         candidateList={interviewDetail["interview_results"] || []}
       />
+      
     </div>
   );
 }

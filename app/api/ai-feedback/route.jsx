@@ -6,6 +6,9 @@ import OpenAI from "openai";
 export async function POST(req) {
   try {
     const { conversation } = await req.json();
+    console.debug("[ai-feedback] Received request, conversation length:",
+      conversation ? (typeof conversation === 'string' ? conversation.length : JSON.stringify(conversation).length) : 0
+    );
 
     if (!conversation) {
       return NextResponse.json(
@@ -44,16 +47,28 @@ export async function POST(req) {
 
     const feedback = completion.choices?.[0]?.message?.content;
 
+    console.debug("[ai-feedback] Raw LLM feedback:", feedback);
+
     if (!feedback) {
+      console.error("[ai-feedback] Empty feedback from LLM response", completion);
       throw new Error("Empty feedback from LLM");
     }
 
-    return NextResponse.json({ content: feedback });
+    // Try to parse the assistant content as JSON to return structured data to the client.
+    let parsed = null;
+    try {
+      parsed = JSON.parse(feedback);
+      console.debug("[ai-feedback] Parsed feedback JSON successfully");
+    } catch (e) {
+      console.warn("[ai-feedback] Feedback is not valid JSON, returning raw string");
+    }
+
+    return NextResponse.json({ content: parsed ?? feedback, raw: feedback, parsed: !!parsed });
   } catch (error) {
     console.error("🔥 AI FEEDBACK ERROR:", error);
 
     return NextResponse.json(
-      { error: "Feedback generation failed" },
+      { error: "Feedback generation failed", details: error?.message || String(error) },
       { status: 500 }
     );
   }

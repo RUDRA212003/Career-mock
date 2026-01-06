@@ -105,50 +105,51 @@ format: interviewQuestions=[
 
 🎯 The goal is to create a structured, relevant, and time-optimized interview plan for a {{jobPosition}} role.`
 
-export const FEEDBACK_PROMPT=`{{conversation}}
+export const FEEDBACK_PROMPT = `{{conversation}}
 
-Depends on this Interview Conversation between assitant and user, 
+You are an experienced interview evaluator. Based ONLY on the interview conversation provided above, produce a single, strict JSON object (no surrounding text) with a clear numerical evaluation and concise explanations. The JSON must follow this exact schema and field names so the UI can consume it reliably.
 
-Give me feedback for user interview. Give me rating out of 10 for technical Skills, 
+Requirements:
+- All numeric ratings must be integers from 0 to 10 (0 = very poor, 10 = outstanding).
+- Provide a short rationale (1-2 sentences) for each numeric rating explaining why the candidate received that score.
+- Compute an 'overallScore' as the arithmetic mean of the numeric ratings (rounded to the nearest integer).
+- Provide a 3-line summary (array of three short strings) capturing strengths, weaknesses, and a short suggested next step.
+- Provide a 'Recommendation' value chosen from: 'Hire', 'Further Evaluation', 'Do Not Hire' and a one-line 'RecommendationMessage' explaining the reason.
+- Do NOT include any additional fields, markdown, or explanatory text outside the JSON.
 
-Communication, Problem Solving, Experience. Also give me summery in 3 lines 
-
-about the interview and one line to let me know whether is recommended 
-
-for hire or not with message very strictly. Give me response in JSON format
-
+Output JSON schema (exact):
 {
-
-    feedback:{
-
-        rating:{
-
-            TechnicalSkills:5,
-
-            Communication:6,
-
-            ProblemSolving:4,
-
-            Experience:7,
-
-            Behavioral:8,
-
-            Analysis:9
-
-
-
+    "feedback": {
+        "rating": {
+            "TechnicalSkills": 0,
+            "Communication": 0,
+            "ProblemSolving": 0,
+            "Experience": 0,
+            "Behavioral": 0,
+            "Analysis": 0
         },
-
-        summery:<in 3 Line>,
-
-        Recommendation:'',
-
-        Recommendation Message:''
-
-
-
+        "rationale": {
+            "TechnicalSkills": "<1-2 sentence rationale>",
+            "Communication": "<1-2 sentence rationale>",
+            "ProblemSolving": "<1-2 sentence rationale>",
+            "Experience": "<1-2 sentence rationale>",
+            "Behavioral": "<1-2 sentence rationale>",
+            "Analysis": "<1-2 sentence rationale>"
+        },
+        "overallScore": 0,
+        "summary": ["line1", "line2", "line3"],
+        "Recommendation": "Hire|Further Evaluation|Do Not Hire",
+        "RecommendationMessage": "<one concise sentence explaining recommendation>"
     }
-
 }
 
-`
+Important scoring anchors for consistency (use these to guide scores):
+- 9-10: exceptional evidence of capability and consistent demonstration during interview.
+- 7-8: strong performance with minor gaps.
+- 4-6: mixed performance with noticeable gaps or weaknesses.
+- 0-3: significant deficiencies or incorrect answers for the role level.
+
+When computing scores, base them on the candidate's answers, depth of knowledge, problem solving steps, and communication clarity shown in the conversation. Be specific in the rationale so differences between candidates are clear.
+
+Now produce the JSON only.
+`;

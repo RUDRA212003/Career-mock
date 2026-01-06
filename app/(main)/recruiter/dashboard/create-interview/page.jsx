@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Coins } from 'lucide-react';
+import { ArrowLeft, Coins, AlertCircle } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Progress } from '@/components/ui/progress';
 import FormContainer from './_components/FormContainer';
@@ -18,7 +18,6 @@ function CreateInterview() {
   const { user } = useUser();
   const [loading, setLoading] = useState(false);
 
-  // Check credits when component mounts and when user changes
   useEffect(() => {
     if (user && user.credits <= 0) {
       toast.error("You don't have enough credits to create an interview");
@@ -34,14 +33,12 @@ function CreateInterview() {
   };
 
   const onGoToNext = () => {
-    // First check credits
     if (user?.credits <= 0) {
       toast.error("Please purchase credits to create an interview");
       router.push('/recruiter/billing');
       return;
     }
 
-    // Then validate form fields
     let missingField = '';
     if (!formData.jobPosition) missingField = 'Job Position';
     else if (!formData.jobDescription) missingField = 'Job Description';
@@ -58,8 +55,6 @@ function CreateInterview() {
 
   const onCreateLink = async (interview_id) => {
     setLoading(true);
-    
-    // Double-check credits before proceeding
     if (user?.credits <= 0) {
       toast.error("Please purchase credits to create an interview");
       router.push('/recruiter/billing');
@@ -79,61 +74,85 @@ function CreateInterview() {
   };
 
   return (
-    <div className="mt-10 px-10 md:px-24 lg:px-44 xl:px-56">
-      <div className="flex gap-5 items-center">
-        <ArrowLeft onClick={() => router.back()} className="cursor-pointer" />
-        <h2 className="font-bold text-2xl">Create New Interview</h2>
-      </div>
-      
-      {/* Credits Display */}
-      {user && (
-        <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Coins className="w-5 h-5 text-blue-600" />
-              <span className="text-sm font-medium text-blue-800">Credits Available:</span>
-              <span className="text-lg font-bold text-blue-600">{user.credits || 0}</span>
-            </div>
-            <div className="text-sm text-blue-600">
-              Cost: 1 Credit per interview
-            </div>
-          </div>
-          {user.credits <= 2 && (
-            <div className="mt-2 text-xs text-amber-600">
-              {user.credits === 0 
-                ? "No credits remaining. Purchase more to continue."
-                : user.credits === 1 
-                ? "Only 1 credit remaining. Consider purchasing more."
-                : "Low credits remaining. Consider purchasing more."
-              }
-            </div>
-          )}
+    <div className="min-h-screen bg-[#F5F5F7]/30 pb-10">
+      {/* Mobile-First Header */}
+      <div className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-[#F5F5F7] px-5 py-4 flex items-center gap-4">
+        <button 
+          onClick={() => router.back()} 
+          className="p-2 hover:bg-[#F5F5F7] rounded-full transition-colors"
+        >
+          <ArrowLeft className="w-5 h-5 text-[#1D1D1F]" />
+        </button>
+        <div>
+          <h2 className="font-bold text-lg text-[#1D1D1F]">New Interview</h2>
+          <p className="text-[10px] font-bold text-[#86868B] uppercase tracking-wider">Step {step} of 3</p>
         </div>
-      )}
-      
-      <Progress value={step * 33.33} className="my-5 h-2 w-full" />
-      
-      {step === 1 && (
-        <FormContainer
-          onHandleInputChange={onHandleInputChange} 
-          GoToNext={onGoToNext}
-        />
-      )}
-      
-      {step === 2 && (
-        <QuestionList 
-          formData={formData} 
-          onCreateLink={onCreateLink}
-          loading={loading}
-        />
-      )}
-      
-      {step === 3 && (
-        <InterviewLink 
-          interview_id={interviewId}
-          formData={formData} 
-        />
-      )}
+      </div>
+
+      <div className="px-5 md:px-24 lg:px-44 xl:px-56 pt-6">
+        {/* Credits Card - Mobile Optimized */}
+        {user && (
+          <div className="mb-6 bg-white border border-[#0071E3]/10 rounded-2xl p-4 shadow-sm shadow-blue-500/5">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 bg-[#0071E3]/10 rounded-xl flex items-center justify-center">
+                  <Coins className="w-5 h-5 text-[#0071E3]" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-[#86868B] uppercase">Balance</p>
+                  <p className="text-xl font-black text-[#1D1D1F] leading-none">{user.credits || 0} <span className="text-[10px] font-bold text-[#86868B]">CR</span></p>
+                </div>
+              </div>
+              <div className="text-right">
+                <p className="text-[10px] font-bold text-[#86868B] uppercase">Cost</p>
+                <p className="text-sm font-bold text-[#0071E3]">1 Credit</p>
+              </div>
+            </div>
+
+            {user.credits <= 2 && (
+              <div className="mt-4 pt-3 border-t border-[#F5F5F7] flex items-center gap-2 text-[11px] font-medium text-amber-600">
+                <AlertCircle size={14} />
+                <span>
+                  {user.credits === 0 
+                    ? "Out of credits. Refill to continue."
+                    : `${user.credits} credit remaining.`
+                  }
+                </span>
+              </div>
+            )}
+          </div>
+        )}
+        
+        {/* Modern Progress Bar */}
+        <div className="mb-8">
+            <Progress value={step * 33.33} className="h-1.5 w-full bg-[#E8E8ED]" />
+        </div>
+        
+        {/* Animated Step Container */}
+        <div className="transition-all duration-300">
+            {step === 1 && (
+              <FormContainer
+                onHandleInputChange={onHandleInputChange} 
+                GoToNext={onGoToNext}
+              />
+            )}
+            
+            {step === 2 && (
+              <QuestionList 
+                formData={formData} 
+                onCreateLink={onCreateLink}
+                loading={loading}
+              />
+            )}
+            
+            {step === 3 && (
+              <InterviewLink 
+                interview_id={interviewId}
+                formData={formData} 
+              />
+            )}
+        </div>
+      </div>
     </div>
   );
 }

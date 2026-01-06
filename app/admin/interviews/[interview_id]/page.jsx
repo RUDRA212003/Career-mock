@@ -7,10 +7,9 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-  CardDescription,
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Users, ArrowLeft, XCircle, Calendar, Mail, FileText, ChevronRight, Loader2 } from 'lucide-react';
+import { Users, ArrowLeft, XCircle, Calendar, Mail, FileText, Loader2, CheckCircle2 } from 'lucide-react';
 import moment from 'moment';
 
 export default function InterviewDetailPage() {
@@ -27,198 +26,203 @@ export default function InterviewDetailPage() {
 
   const fetchDetails = async () => {
     setLoading(true);
-    const { data: interviewData, error: interviewError } = await supabase
-      .from('interviews')
-      .select('*')
-      .eq('interview_id', interviewId)
-      .single();
+    try {
+      // 1. Fetch the main interview metadata
+      const { data: interviewData, error: interviewError } = await supabase
+        .from('interviews')
+        .select('*')
+        .eq('interview_id', interviewId)
+        .single();
 
-    if (interviewError || !interviewData) {
-      setInterview(null);
+      if (interviewError || !interviewData) {
+        setInterview(null);
+        setLoading(false);
+        return;
+      }
+
+      // 2. Fetch candidate results
+      const { data: resultsData } = await supabase
+        .from('interview_results')
+        .select('*')
+        .eq('interview_id', interviewId)
+        .order('completed_at', { ascending: false });
+
+      setInterview(interviewData);
+      setResults(resultsData || []);
+    } catch (err) {
+      console.error("Fetch error:", err);
+    } finally {
       setLoading(false);
-      return;
     }
-
-    const { data: resultsData, error: resultsError } = await supabase
-      .from('interview_results')
-      .select('*')
-      .eq('interview_id', interviewId);
-
-    setInterview(interviewData);
-    setResults(resultsData || []);
-    setLoading(false);
   };
 
   if (loading) {
     return (
-      <div className="flex h-[60vh] flex-col items-center justify-center gap-4">
+      <div className="flex h-screen w-full flex-col items-center justify-center gap-4 bg-[#F5F5F7]">
         <Loader2 className="animate-spin h-10 w-10 text-[#0071E3]" />
-        <p className="text-[#86868B] font-medium tracking-tight">Loading details...</p>
+        <p className="text-[#86868B] font-medium tracking-tight">Loading session analytics...</p>
       </div>
     );
   }
 
   if (!interview) {
     return (
-      <div className="text-center py-24 px-6">
-        <XCircle className="w-16 h-16 text-[#FF3B30] mx-auto mb-6 opacity-80" />
-        <h2 className="text-3xl font-bold tracking-tight mb-4 text-[#1D1D1F]">Interview Not Found</h2>
-        <p className="text-[#86868B] mb-8 max-w-md mx-auto">The session you are looking for might have been removed or the link is incorrect.</p>
-        <Button onClick={() => router.back()} variant="outline" className="rounded-full px-8 h-12 border-[#D2D2D7] font-medium">
-          <ArrowLeft className="w-4 h-4 mr-2" /> Return to Dashboard
+      <div className="flex flex-col items-center justify-center h-screen text-center p-6 bg-[#F5F5F7]">
+        <XCircle className="w-16 h-16 text-[#FF3B30] mb-6 opacity-80" />
+        <h2 className="text-3xl font-bold mb-4 text-[#1D1D1F]">Interview Not Found</h2>
+        <Button onClick={() => router.push('/dashboard')} variant="outline" className="rounded-full px-8 h-12 border-[#D2D2D7]">
+          <ArrowLeft className="w-4 h-4 mr-2" /> Back to Dashboard
         </Button>
       </div>
     );
   }
 
   return (
-    <div className="max-w-[1024px] mx-auto p-6 md:p-12 bg-[#F5F5F7] min-h-screen text-[#1D1D1F] font-sans selection:bg-blue-100">
-      {/* Navigation */}
-      <nav className="mb-10">
-        <button 
-          onClick={() => router.back()} 
-          className="flex items-center text-[#0066CC] font-semibold text-lg hover:gap-2 transition-all"
-        >
-          <ArrowLeft className="w-5 h-5 mr-2" /> Back
-        </button>
-      </nav>
+    <div className="min-h-screen bg-[#F5F5F7] text-[#1D1D1F] selection:bg-blue-100">
+      {/* Full Screen Layout Container */}
+      <div className="max-w-[1600px] mx-auto p-6 md:p-10 lg:p-12">
+        
+        {/* Top Navigation */}
+        <nav className="mb-8">
+          <button 
+            onClick={() => router.back()} 
+            className="group flex items-center text-[#0066CC] font-semibold text-lg hover:underline transition-all"
+          >
+            <ArrowLeft className="w-5 h-5 mr-2 transition-transform group-hover:-translate-x-1" /> 
+            Back to Dashboard
+          </button>
+        </nav>
 
-      {/* Main Header Card */}
-      <Card className="rounded-[28px] border-none shadow-sm bg-white overflow-hidden mb-12">
-        <CardHeader className="p-8 md:p-12 pb-6">
-          <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
-            <div className="space-y-4">
-              <div className="w-16 h-16 rounded-2xl bg-[#F5F5F7] flex items-center justify-center text-[#0071E3]">
-                <Users className="w-8 h-8" />
-              </div>
-              <div>
-                <CardTitle className="text-4xl font-bold tracking-tight mb-2">
-                  {interview.jobposition || 'Untitled Interview'}
-                </CardTitle>
-                <div className="flex flex-wrap items-center gap-4 text-[#86868B] font-medium">
-                  <span className="flex items-center gap-1.5"><Mail className="w-4 h-4" /> {interview.userEmail}</span>
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#D2D2D7]" />
-                  <span className="flex items-center gap-1.5"><Calendar className="w-4 h-4" /> {moment(interview.created_at).format('MMM DD, YYYY')}</span>
+        {/* Header Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 mb-12">
+          <Card className="lg:col-span-3 rounded-[32px] border-none shadow-sm bg-white overflow-hidden">
+            <CardHeader className="p-8 md:p-10">
+              <div className="flex flex-col md:flex-row gap-8 items-start">
+                <div className="w-20 h-20 rounded-[24px] bg-[#F5F5F7] flex items-center justify-center text-[#0071E3] shrink-0">
+                  <Users className="w-10 h-10" />
+                </div>
+                <div className="space-y-4">
+                  <div>
+                    <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-[#1D1D1F] capitalize">
+                      {interview.jobposition || 'Untitled Position'}
+                    </h1>
+                    <div className="flex flex-wrap items-center gap-6 mt-4 text-[#86868B] font-medium text-lg">
+                      <span className="flex items-center gap-2"><Mail className="w-5 h-5" /> {interview.userEmail}</span>
+                      <span className="flex items-center gap-2"><Calendar className="w-5 h-5" /> {moment(interview.created_at).format('MMMM DD, YYYY')}</span>
+                    </div>
+                  </div>
+                  <div className="pt-4 border-t border-[#F2F2F7]">
+                    <h4 className="text-[11px] font-bold text-[#A1A1A6] uppercase tracking-[0.2em] mb-2 flex items-center gap-2">
+                      <FileText className="w-4 h-4" /> Role Description
+                    </h4>
+                    <p className="text-lg leading-relaxed text-[#424245] max-w-4xl">
+                      {interview.jobdescription || 'No description provided.'}
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
-            <div className="bg-[#F5F5F7] px-6 py-4 rounded-2xl text-center md:text-right">
-              <p className="text-[12px] font-bold text-[#86868B] uppercase tracking-wider mb-1">Participants</p>
-              <p className="text-3xl font-bold tracking-tight">{results.length}</p>
-            </div>
-          </div>
-        </CardHeader>
+            </CardHeader>
+          </Card>
 
-        <CardContent className="p-8 md:p-12 pt-0 space-y-8">
-          <div className="h-[1px] bg-[#D2D2D7]/50 w-full" />
-          <div className="grid md:grid-cols-2 gap-12">
-            <div className="space-y-3">
-              <h4 className="text-[13px] font-bold text-[#86868B] uppercase tracking-widest flex items-center gap-2">
-                <FileText className="w-4 h-4" /> Job Description
-              </h4>
-              <p className="text-lg leading-relaxed text-[#424245]">
-                {interview.jobdescription || 'No description provided.'}
-              </p>
+          <Card className="lg:col-span-1 rounded-[32px] border-none shadow-sm bg-[#0071E3] text-white p-8 flex flex-col justify-center items-center text-center">
+            <p className="text-white/70 font-bold uppercase text-xs tracking-[0.15em] mb-2">Total Participants</p>
+            <span className="text-8xl font-black tracking-tighter leading-none">{results.length}</span>
+            <div className="mt-6 px-6 py-2 bg-white/10 rounded-full text-sm font-semibold backdrop-blur-md">
+              Active Session
             </div>
-            <div className="space-y-3">
-              <h4 className="text-[13px] font-bold text-[#86868B] uppercase tracking-widest flex items-center gap-2">
-                Internal Reference
-              </h4>
-              <code className="block bg-[#F5F5F7] p-4 rounded-xl text-sm font-mono text-[#1D1D1F]">
-                {interview.interview_id}
-              </code>
+          </Card>
+        </div>
+
+        {/* Candidate Performance Section */}
+        <div className="space-y-8">
+          <div className="flex items-center justify-between px-2">
+            <h3 className="text-3xl font-bold tracking-tight">Candidate Performance</h3>
+            <div className="text-[#86868B] font-semibold bg-white px-4 py-2 rounded-full shadow-sm">
+              Showing {results.length} results
             </div>
           </div>
-        </CardContent>
-      </Card>
+          
+          {results.length === 0 ? (
+            <div className="bg-white rounded-[32px] p-24 text-center shadow-sm">
+              <p className="text-[#86868B] font-medium text-xl italic">No candidates have completed this interview yet.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3 gap-8">
+              {results.map((result) => {
+                // --- ROBUST DATA EXTRACTION LOGIC ---
+                let score = 0;
+                let summary = "No automated summary generated for this candidate.";
+                let recommendation = "N/A";
 
-      {/* Candidate Results Section */}
-      <div className="space-y-6">
-        <h3 className="text-2xl font-bold tracking-tight px-2">Candidate Results</h3>
-        
-        {results.length === 0 ? (
-          <div className="bg-white rounded-[28px] p-16 text-center shadow-sm">
-            <p className="text-[#86868B] font-medium text-lg">No candidates have participated yet.</p>
-          </div>
-        ) : (
-          <div className="grid gap-6">
-            {results.map((result) => {
-              let feedback = null;
-              try {
-                feedback = result.conversation_transcript?.feedback
-                  ? result.conversation_transcript.feedback
-                  : JSON.parse(result.conversation_transcript)?.feedback;
-              } catch {
-                feedback = null;
-              }
+                try {
+                  const rawData = result.conversation_transcript;
+                  const parsed = typeof rawData === 'string' ? JSON.parse(rawData) : rawData;
+                  
+                  // Look for feedback nested or at root
+                  const feedback = parsed?.feedback || parsed || {};
+                  
+                  // Flexible keys for Score and Summary
+                  score = feedback?.overallScore ?? feedback?.score ?? feedback?.rating?.overall ?? 0;
+                  summary = feedback?.summary || feedback?.analysis || summary;
+                  recommendation = result.recommendations || feedback?.Recommendation || feedback?.recommendation || "N/A";
+                } catch (e) {
+                  console.error("JSON Error:", e);
+                }
 
-              const ratings = feedback?.rating || {};
-              const summary = feedback?.summary || '';
-              const recommendation = feedback?.Recommendation || '';
-              const recommendationMsg = feedback?.RecommendationMessage || '';
+                const isRecommended = recommendation.toLowerCase().includes('yes') || recommendation.toLowerCase().includes('recommended');
 
-              const ratingValues = Object.values(ratings).filter((val) => typeof val === 'number');
-              const avgScore = ratingValues.length
-                ? (ratingValues.reduce((a, b) => a + b, 0) / ratingValues.length).toFixed(1)
-                : 'N/A';
-
-              return (
-                <Card key={result.id} className="rounded-[28px] border-none shadow-sm bg-white overflow-hidden transition-all hover:shadow-md">
-                  <div className="p-8 md:p-10">
-                    <div className="flex flex-col md:flex-row justify-between items-start gap-6 mb-8">
-                      <div className="flex items-center gap-4">
-                        <div className="w-14 h-14 rounded-full bg-[#E5E5EA] flex items-center justify-center text-[#1D1D1F] font-bold text-xl">
-                          {result.fullname?.charAt(0) || 'U'}
+                return (
+                  <Card key={result.id} className="rounded-[32px] border-none shadow-sm bg-white flex flex-col transition-all hover:shadow-2xl hover:-translate-y-1 overflow-hidden">
+                    <div className="p-8 flex-1">
+                      <div className="flex justify-between items-start mb-8">
+                        <div className="flex items-center gap-4">
+                          <div className="w-14 h-14 rounded-full bg-[#E5E5EA] flex items-center justify-center text-[#1D1D1F] font-bold text-xl border-2 border-white shadow-inner">
+                            {result.fullname?.charAt(0) || 'U'}
+                          </div>
+                          <div className="overflow-hidden">
+                            <h4 className="text-xl font-bold text-[#1D1D1F] truncate">
+                              {result.fullname || 'Unknown'}
+                            </h4>
+                            <p className="text-sm text-[#86868B] font-medium truncate">{result.email}</p>
+                          </div>
                         </div>
-                        <div>
-                          <h3 className="text-2xl font-bold text-[#1D1D1F]">
-                            {result.fullname || 'Unknown Candidate'}
-                          </h3>
-                          <p className="text-[#86868B] font-medium">{result.email || 'No email provided'}</p>
+                        <div className="text-right shrink-0">
+                          <div className="text-4xl font-black text-[#0071E3] tracking-tighter">
+                            {score}<span className="text-lg text-[#86868B] ml-0.5 font-bold">/10</span>
+                          </div>
+                          <p className="text-[10px] font-black text-[#A1A1A6] uppercase tracking-[0.1em]">AI Score</p>
                         </div>
                       </div>
-                      <div className="flex flex-col items-center md:items-end">
-                        <span className="text-[64px] font-bold tracking-tighter leading-none text-[#0071E3]">
-                          {avgScore}<span className="text-2xl text-[#86868B] tracking-normal">%</span>
-                        </span>
-                        <span className="text-[12px] font-bold text-[#86868B] uppercase tracking-wider mt-1">Match Score</span>
-                      </div>
-                    </div>
 
-                    {summary && (
-                      <div className="mb-8 p-6 bg-[#F5F5F7] rounded-2xl">
-                        <h4 className="text-[13px] font-bold text-[#86868B] uppercase tracking-widest mb-3">AI Analysis Summary</h4>
-                        <p className="text-[16px] leading-relaxed text-[#424245]">
+                      <div className="p-5 bg-[#F5F5F7] rounded-[24px] border border-[#E5E5EA] min-h-[120px]">
+                        <h5 className="text-[10px] font-black text-[#A1A1A6] uppercase tracking-widest mb-2">Analysis Summary</h5>
+                        <p className="text-[15px] leading-relaxed text-[#424245] line-clamp-5">
                           {summary}
                         </p>
                       </div>
-                    )}
-
-                    <div className="flex flex-col md:flex-row justify-between items-center gap-6 pt-6 border-t border-[#D2D2D7]/50">
-                      {recommendation && (
-                        <div className="flex flex-wrap items-center gap-3">
-                          <span className={`px-5 py-2 rounded-full text-[13px] font-bold tracking-tight ${
-                            recommendation.toLowerCase().includes('recommended')
-                              ? 'bg-[#34C759]/10 text-[#34C759]'
-                              : 'bg-[#FF3B30]/10 text-[#FF3B30]'
-                          }`}>
-                            {recommendation}
-                          </span>
-                          {recommendationMsg && (
-                            <span className="text-[#86868B] text-sm font-medium">{recommendationMsg}</span>
-                          )}
-                        </div>
-                      )}
-                      <div className="text-[12px] font-medium text-[#A1A1A6] italic uppercase tracking-wider">
-                        Session: {result.completed_at ? moment(result.completed_at).format('MMM DD, YYYY [at] HH:mm') : 'Draft'}
-                      </div>
                     </div>
-                  </div>
-                </Card>
-              );
-            })}
-          </div>
-        )}
+
+                    <div className="px-8 py-6 bg-[#FAFAFA] border-t border-[#F2F2F7] flex items-center justify-between mt-auto">
+                      <div className={`flex items-center gap-2 px-5 py-2 rounded-full text-xs font-black tracking-tight ${
+                        isRecommended 
+                          ? 'bg-[#34C759]/10 text-[#34C759]' 
+                          : recommendation === 'N/A' 
+                            ? 'bg-gray-100 text-gray-500' 
+                            : 'bg-[#FF3B30]/10 text-[#FF3B30]'
+                      }`}>
+                        {isRecommended && <CheckCircle2 className="w-3.5 h-3.5" />}
+                        {recommendation}
+                      </div>
+                      <span className="text-[11px] font-bold text-[#A1A1A6] uppercase tracking-wide">
+                        {moment(result.completed_at).fromNow()}
+                      </span>
+                    </div>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

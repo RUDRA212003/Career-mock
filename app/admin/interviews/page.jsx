@@ -76,10 +76,29 @@ function InterviewAnalytics() {
 
           const completed = results?.filter((r) => r.status === 'completed') || [];
           const totalDuration = completed.reduce((s, r) => s + (r.duration || 0), 0);
-          const avgScore =
-            completed.length > 0
-              ? completed.reduce((s, r) => s + (r.score || 0), 0) / completed.length
-              : 0;
+
+          // Helper to extract a numeric score (0-10) from a result record.
+          const extractScore = (r) => {
+            if (typeof r.score === 'number' && !isNaN(r.score)) return r.score;
+            try {
+              const raw = r.conversation_transcript;
+              const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw || {};
+              const fb = parsed?.feedback || parsed || {};
+              if (typeof fb.overallScore === 'number') return fb.overallScore;
+              if (typeof fb.score === 'number') return fb.score;
+              if (fb.rating && typeof fb.rating === 'object') {
+                const vals = Object.values(fb.rating).filter((v) => typeof v === 'number');
+                if (vals.length) return vals.reduce((a, b) => a + b, 0) / vals.length;
+              }
+            } catch (e) {
+              // ignore parse errors
+            }
+            return 0;
+          };
+
+          const totalScore = completed.reduce((s, r) => s + extractScore(r), 0);
+          // Convert average (0-10) to percent (0-100) for list display
+          const avgScore = completed.length > 0 ? (totalScore / completed.length) * 10 : 0;
 
           return {
             ...interview,
