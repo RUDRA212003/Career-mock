@@ -13,7 +13,7 @@ import { InterviewDataContext } from '@/context/InterviewDataContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useUser } from '@/app/provider';
 
-const DEBUG_MODE = true; 
+const DEBUG_MODE = false; 
 
 function Interview() {
   const params = useParams();
